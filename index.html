@@ -197,6 +197,12 @@ function cleanUrl(url) {
 function isIG(tok) { return tok.indexOf('instagram.com') !== -1; }
 function isTikTok(tok) { return tok.indexOf('tiktok.com') !== -1; }
 
+function isURL(tok) { return /^https?:\/\//i.test(tok) || /^\[[^\]]*\]\(\s*https?:\/\//i.test(tok); }
+
+// Post do Instagram e vídeo do TikTok — o resto do link da plataforma é perfil.
+function isIGPost(tok) { return tok.indexOf('/p/') !== -1 || tok.indexOf('/reel/') !== -1; }
+function isTikTokVideo(tok) { return tok.indexOf('/video/') !== -1; }
+
 // Colunas cujo cabeçalho contém "Perfil" nunca deveriam ter link de post/reel/vídeo.
 // Detecta o engano mais comum: colar o link do post no lugar do perfil.
 function isPostNotProfile(url, isTikTokCol) {
@@ -211,7 +217,10 @@ function parseInput(raw) {
   var hasTabs = lines.some(function(l){ return l.indexOf('\t') !== -1; });
 
   if (hasTabs) {
-    return lines.map(function(l){ return l.split('\t').map(function(c){ return c.trim(); }); });
+    var tabRows = lines.map(function(l){ return l.split('\t').map(function(c){ return c.trim(); }); });
+    // primeira linha sem nenhuma URL e o cabecalho da planilha, nao e dado
+    if (tabRows.length > 1 && !tabRows[0].some(isURL)) tabRows.shift();
+    return tabRows;
   }
 
   // sem tabs: pode ser uma URL por linha, ou tudo achatado em espaços (colado do chat)
@@ -226,12 +235,22 @@ function parseInput(raw) {
     return lines.map(function(l){ return [l]; });
   }
 
+  // descarta palavras soltas de cabecalho ("Link do perfil do Instagram")
+  allTokens = allTokens.filter(isURL);
+
   var rows = [];
   var i = 0, n = allTokens.length;
   while (i < n) {
     var row = [allTokens[i]]; i++;
-    while (i < n && isIG(allTokens[i])) { row.push(allTokens[i]); i++; }
-    while (i < n && isTikTok(allTokens[i])) { row.push(allTokens[i]); i++; }
+    // so os posts entram na linha do perfil: um novo perfil do Instagram
+    // sempre abre uma linha nova, senao uma lista de perfis viraria uma
+    // unica linha com dezenas de colunas
+    while (i < n && isIG(allTokens[i]) && isIGPost(allTokens[i])) { row.push(allTokens[i]); i++; }
+    // depois os TikToks, ate o proximo perfil (de Instagram ou de TikTok)
+    while (i < n && isTikTok(allTokens[i])) {
+      if (!isTikTokVideo(allTokens[i]) && row.some(function(t){ return isTikTok(t) && !isTikTokVideo(t); })) break;
+      row.push(allTokens[i]); i++;
+    }
     rows.push(row);
   }
   return rows;
