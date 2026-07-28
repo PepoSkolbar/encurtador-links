@@ -16,6 +16,21 @@ parâmetros de rastreio (tudo depois do `?` na URL).
 3. Clique em **Processar**.
 4. Copie o resultado em TSV, copie uma coluna específica, ou baixe como `.tsv`.
 
+## Coluna de nome (opcional)
+
+Se a lista trouxer o nome do perfil antes dos links — seja como primeira coluna
+da tabela, seja como as primeiras palavras da linha no texto solto — ele é
+reconhecido e vira sempre a **primeira coluna**, com o cabeçalho `Nome`.
+
+As iniciais de nome e sobrenome recebem maiúscula (`maria da silva` →
+`Maria da Silva`). Partículas portuguesas (`de`, `da`, `do`, `das`, `dos`, `e`…)
+ficam minúsculas quando não são a primeira palavra, e nomes com hífen são
+tratados parte a parte (`ana-maria` → `Ana-Maria`).
+
+O resto de cada palavra é preservado como veio, para não estragar grafias
+próprias como `McCartney` ou `iFood` — ou seja, um nome digitado todo em
+CAIXA ALTA continua em caixa alta.
+
 ## Regras de limpeza
 
 - Cada URL é cortada no primeiro `?`, preservando tudo antes dele (inclusive a

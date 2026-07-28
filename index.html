@@ -183,7 +183,7 @@
 
 <div id="resultArea"></div>
 
-<footer>Regra: corta cada URL no primeiro "?". Sem "?" a URL fica intacta. Trata também links em formato markdown [texto](url).</footer>
+<footer>Regra: corta cada URL no primeiro "?". Sem "?" a URL fica intacta. Trata também links em formato markdown [texto](url).<br>Se a lista começar com o nome do perfil, ele vira a primeira coluna e ganha iniciais maiúsculas.</footer>
 
 <script>
 function cleanUrl(url) {
@@ -202,6 +202,24 @@ function isURL(tok) { return /^https?:\/\//i.test(tok) || /^\[[^\]]*\]\(\s*https
 // Post do Instagram e vídeo do TikTok — o resto do link da plataforma é perfil.
 function isIGPost(tok) { return tok.indexOf('/p/') !== -1 || tok.indexOf('/reel/') !== -1; }
 function isTikTokVideo(tok) { return tok.indexOf('/video/') !== -1; }
+
+// Partículas de nomes em português ficam minúsculas quando não são a primeira
+// palavra: "maria da silva" -> "Maria da Silva", não "Maria Da Silva".
+var PARTICULAS = ['de','da','do','das','dos','e','di','du','del','van','von','la','y'];
+
+// Deixa maiúscula a inicial de cada nome/sobrenome. O resto da palavra fica
+// como veio, para não estragar grafias próprias ("McCartney", "iFood").
+function capitalizarNome(nome) {
+  var palavras = nome.trim().split(/\s+/);
+  if (palavras.length === 1 && palavras[0] === '') return '';
+  return palavras.map(function(palavra, idx){
+    if (idx > 0 && PARTICULAS.indexOf(palavra.toLowerCase()) !== -1) return palavra.toLowerCase();
+    // trata nomes compostos com hífen ("ana-maria")
+    return palavra.split('-').map(function(parte){
+      return parte.charAt(0).toUpperCase() + parte.slice(1);
+    }).join('-');
+  }).join(' ');
+}
 
 // Colunas cujo cabeçalho contém "Perfil" nunca deveriam ter link de post/reel/vídeo.
 // Detecta o engano mais comum: colar o link do post no lugar do perfil.
@@ -233,6 +251,24 @@ function parseInput(raw) {
   var hasSocial = allTokens.some(function(t){ return isIG(t) || isTikTok(t); });
   if (!hasSocial) {
     return lines.map(function(l){ return [l]; });
+  }
+
+  // Nome do perfil: palavras antes da primeira URL da linha ("Maria Silva https://...").
+  // Se alguma linha vier assim, a lista e organizada por linha, uma por pessoa,
+  // porque o nome ja marca onde cada registro comeca.
+  var comNome = lines.map(function(l){
+    var toks = l.split(/\s+/).filter(function(t){ return t; });
+    var primeiraURL = 0;
+    while (primeiraURL < toks.length && !isURL(toks[primeiraURL])) primeiraURL++;
+    return {
+      nome: toks.slice(0, primeiraURL).join(' '),
+      urls: toks.slice(primeiraURL).filter(isURL)
+    };
+  }).filter(function(reg){ return reg.urls.length > 0; });
+
+  var temNome = comNome.some(function(reg){ return reg.nome !== ''; });
+  if (temNome) {
+    return comNome.map(function(reg){ return [reg.nome].concat(reg.urls); });
   }
 
   // descarta palavras soltas de cabecalho ("Link do perfil do Instagram")
@@ -282,9 +318,21 @@ document.getElementById('processBtn').addEventListener('click', function(){
   rows.forEach(function(r){ lenCounts[r.length] = (lenCounts[r.length]||0) + 1; });
   var uneven = Object.keys(lenCounts).length > 1;
 
-  var cleanedRows = rows.map(function(r){ return r.map(cleanUrl); });
+  // Coluna de nome: existe quando a primeira celula de alguma linha nao e URL.
+  // Quando existe, ela e sempre a primeira coluna.
+  var temColunaNome = rows.some(function(r){
+    return r[0] && r[0] !== '' && !isURL(r[0]);
+  });
+
+  var cleanedRows = rows.map(function(r){
+    return r.map(function(cel, idx){
+      if (temColunaNome && idx === 0) return capitalizarNome(cel || '');
+      return cleanUrl(cel || '');
+    });
+  });
 
   var defaultHeaders = ['Instagram - Perfil', 'Instagram - Post', 'TikTok - Perfil', 'TikTok - Post'];
+  if (temColunaNome) defaultHeaders = ['Nome'].concat(defaultHeaders);
   var headers = [];
   for (var c = 0; c < colCount; c++) {
     headers.push(defaultHeaders[c] || ('Coluna ' + (c+1)));
