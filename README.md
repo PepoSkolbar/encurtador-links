@@ -1,9 +1,16 @@
-# Encurtador de links — Instagram / TikTok
+# Organizador — Instagram / TikTok
 
-Ferramenta client-side que limpa links de Instagram e TikTok, removendo os
-parâmetros de rastreio (tudo depois do `?` na URL).
+Ferramentas de campanha client-side, em duas abas:
+
+1. **Encurtador de links** — limpa links de Instagram e TikTok, removendo os
+   parâmetros de rastreio (tudo depois do `?` na URL).
+2. **Briefing** — recebe o briefing bagunçado do e-mail e remonta no modelo padrão.
 
 **Tudo roda no navegador do usuário. Nenhum dado é enviado para servidor algum.**
+
+---
+
+# Aba 1 — Encurtador de links
 
 ## Como usar
 
@@ -43,6 +50,42 @@ CAIXA ALTA continua em caixa alta.
 Se um link em qualquer coluna **Perfil** contiver `/reel/` ou `/p/` (Instagram)
 ou `/video/` (TikTok), a célula é destacada em vermelho e um aviso lista as
 linhas suspeitas — sinal de que o link do post foi colado no lugar errado.
+
+---
+
+# Aba 2 — Organizador de briefing
+
+Cola o briefing como ele chegou (e-mail, chat) e devolve no modelo padrão,
+pronto para enviar ao influenciador.
+
+## O que ele resolve na entrada
+
+- **Lixo de e-mail colado**: o caractere `￼` (imagem perdida) é descartado.
+- **Links markdown invertidos**: no e-mail original o texto do link é a URL boa
+  e o `href` é um amontoado de URLs grudadas. Quando o texto é uma URL, ele
+  vence; quando é palavra (`[Sugestão](lixo) de Legendas`), o texto é mantido e
+  o `href` descartado.
+- **Legendas numeradas** viram lista com marcador, agrupadas pelos títulos
+  `Legendas para ...`. Itens vazios (um `11.` solto, por exemplo) são ignorados.
+- **Orçamento e total de micros** ficam de fora do briefing final — são
+  informação interna. Aparecem à parte, só para conferência.
+
+## Itens pendentes
+
+Nada é inventado. O que não estiver no texto é listado como pendente e pode ser
+preenchido nos campos acima do resultado, que atualiza na hora. Tipicamente
+faltam **período** (o e-mail costuma trazer só a duração, sem data de início) e
+**minutagem**.
+
+Digitando a data de início, a data final é calculada a partir do número de
+semanas do próprio briefing (3 semanas → `23/07` vira `23/07 a 13/08`).
+
+## Conferência automática
+
+Se a soma dos micros das semanas não bater com o total informado no briefing,
+isso é apontado.
+
+---
 
 ## Estrutura
 

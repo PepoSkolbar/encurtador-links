@@ -161,29 +161,138 @@
   .table-wrap { max-height: 520px; overflow: auto; }
 
   footer { margin-top: 26px; font-size: 12px; color: var(--ink-soft); text-align: center; }
+
+  /* ---- abas ---- */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 22px 54px;
+    border-bottom: 1.5px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: none;
+    color: var(--ink-soft);
+    border: none;
+    border-bottom: 2.5px solid transparent;
+    border-radius: 0;
+    padding: 9px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: -1.5px;
+  }
+  .tab-btn:hover { background: none; color: var(--ink); }
+  .tab-btn[aria-selected="true"] {
+    color: var(--accent-dark);
+    border-bottom-color: var(--accent);
+  }
+  .tab-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tab-panel[hidden] { display: none; }
+
+  /* ---- briefing ---- */
+  .faltando {
+    margin-top: 18px;
+    padding: 14px 18px;
+    background: #fffaf0;
+    border: 1px solid #f0d9a8;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #7a5312;
+  }
+  .faltando strong { display: block; margin-bottom: 8px; }
+  .faltando ul { margin: 0; padding-left: 18px; }
+  .faltando li { margin: 5px 0; }
+
+  .campos {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 12px;
+  }
+  .campo label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--ink-soft);
+    margin-bottom: 5px;
+  }
+  .campo input {
+    width: 100%;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 11px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: #fbfaff;
+    color: var(--ink);
+  }
+  .campo input:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .campo input.pendente { border-color: #e8b84b; background: #fffaf0; }
+
+  .saida {
+    margin-top: 18px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    background: #fbfaff;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    max-height: 560px;
+    overflow: auto;
+  }
 </style>
 </head>
 <body>
 
 <div class="hero">
-  <div class="badge">🔗</div>
-  <h1>Encurtador de links</h1>
+  <div class="badge">🗂</div>
+  <h1>Organizador</h1>
 </div>
-<p class="sub">Cola a lista de Instagram e TikTok (tabela com tabs, ou o texto achatado do chat) e organiza tudo em colunas certinhas. Roda 100% no navegador — nada sai daqui.</p>
+<p class="sub">Ferramentas de campanha que rodam 100% no seu navegador — nada sai daqui.</p>
 
-<div class="card">
-  <textarea id="input" placeholder="Cole aqui a lista de links (com tabs entre colunas, ou colada solta do chat)"></textarea>
+<div class="tabs" role="tablist">
+  <button class="tab-btn" role="tab" id="tab-links" aria-controls="painel-links" aria-selected="true">🔗 Encurtador de links</button>
+  <button class="tab-btn" role="tab" id="tab-briefing" aria-controls="painel-briefing" aria-selected="false">📋 Briefing</button>
+</div>
 
-  <div class="row">
-    <button id="processBtn">Processar</button>
-    <button class="secondary" id="clearBtn">Limpar</button>
-    <span class="status" id="status"></span>
+<section class="tab-panel" id="painel-links" role="tabpanel" aria-labelledby="tab-links">
+  <div class="card">
+    <textarea id="input" placeholder="Cole aqui a lista de links (com tabs entre colunas, ou colada solta do chat)"></textarea>
+
+    <div class="row">
+      <button id="processBtn">Processar</button>
+      <button class="secondary" id="clearBtn">Limpar</button>
+      <span class="status" id="status"></span>
+    </div>
   </div>
-</div>
 
-<div id="resultArea"></div>
+  <div id="resultArea"></div>
 
-<footer>Regra: corta cada URL no primeiro "?". Sem "?" a URL fica intacta. Trata também links em formato markdown [texto](url).<br>Se a lista começar com o nome do perfil, ele vira a primeira coluna e ganha iniciais maiúsculas.</footer>
+  <footer>Regra: corta cada URL no primeiro "?". Sem "?" a URL fica intacta. Trata também links em formato markdown [texto](url).<br>Se a lista começar com o nome do perfil, ele vira a primeira coluna e ganha iniciais maiúsculas.</footer>
+</section>
+
+<section class="tab-panel" id="painel-briefing" role="tabpanel" aria-labelledby="tab-briefing" hidden>
+  <div class="card">
+    <textarea id="brInput" placeholder="Cole aqui o briefing bagunçado, do jeito que chegou no e-mail ou no chat"></textarea>
+
+    <div class="row">
+      <button id="brBtn">Organizar</button>
+      <button class="secondary" id="brClearBtn">Limpar</button>
+      <span class="status" id="brStatus"></span>
+    </div>
+
+    <div class="campos" id="brCampos" hidden></div>
+  </div>
+
+  <div id="brResultArea"></div>
+
+  <footer>Extrai os dados do briefing e remonta no modelo padrão. O que não estiver no texto é apontado como pendente — nada é inventado.<br>Orçamento e total de micros ficam de fora: são informação interna, não vão para o influenciador.</footer>
+</section>
 
 <script>
 function cleanUrl(url) {
@@ -438,6 +547,408 @@ function flashStatus(msg) {
   statusEl.textContent = msg;
   statusEl.className = 'status ok';
   setTimeout(function(){ statusEl.textContent = prev; }, 2000);
+}
+
+/* =========================================================================
+   ABAS
+   ========================================================================= */
+[].forEach.call(document.querySelectorAll('.tab-btn'), function(btn){
+  btn.addEventListener('click', function(){
+    [].forEach.call(document.querySelectorAll('.tab-btn'), function(b){
+      var alvo = document.getElementById(b.getAttribute('aria-controls'));
+      var ativo = (b === btn);
+      b.setAttribute('aria-selected', ativo ? 'true' : 'false');
+      alvo.hidden = !ativo;
+    });
+  });
+});
+
+/* =========================================================================
+   ORGANIZADOR DE BRIEFING
+   ========================================================================= */
+
+// O e-mail vem cheio de U+FFFC (o "￼" que sobra de imagem colada) e de links
+// markdown cujo href e um amontoado de URLs grudadas. Nada disso e conteudo.
+function brLimparURL(u) {
+  u = String(u).replace(/￼/g, '').trim();
+  var corte = u.indexOf('?');
+  if (corte !== -1) u = u.slice(0, corte);
+  return u.replace(/[),.;]+$/, '');
+}
+
+function brEhURL(s) { return /^https?:\/\/\S+$/i.test(String(s).replace(/￼/g, '').trim()); }
+
+// Texto para leitura: quando o rotulo do markdown e uma URL, ela e o conteudo
+// de verdade; quando e palavra ("[Sugestao](lixo) de Legendas"), o href e lixo.
+function brTextoFluxo(raw) {
+  return raw
+    .replace(/\r\n/g, '\n')
+    .replace(/\[([^\]]*)\]\(([^)]*)\)/g, function(_, txt, href){
+      if (brEhURL(txt)) return brLimparURL(txt);
+      if (String(txt).trim() === '') return brLimparURL((String(href).split(/￼|\s/)[0]) || '');
+      return txt;
+    })
+    .replace(/￼/g, '\n');
+}
+
+// Todas as URLs do documento, inclusive as escondidas dentro dos hrefs colados.
+function brTodasURLs(raw) {
+  var achadas = String(raw).replace(/￼/g, ' ').match(/https?:\/\/[^\s)\]]+/gi) || [];
+  var vistas = {}, saida = [];
+  achadas.forEach(function(u){
+    var limpa = brLimparURL(u);
+    if (limpa && !vistas[limpa]) { vistas[limpa] = true; saida.push(limpa); }
+  });
+  return saida;
+}
+
+function brSemDecor(s) {
+  return String(s)
+    .replace(/[\*_`]/g, '')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '')
+    .replace(/￼/g, '')
+    .trim();
+}
+
+function brChave(s) {
+  return brSemDecor(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+function brEhAudioIG(u) { return /instagram\.com\/reels?\/audio\//i.test(u); }
+function brEhMusicaTT(u) { return /tiktok\.com\/music\//i.test(u); }
+function brEhVideoRef(u) {
+  return /vt\.tiktok\.com\//i.test(u) ||
+         /tiktok\.com\/@[^/]+\/video\//i.test(u) ||
+         /instagram\.com\/(reel|p)\//i.test(u);
+}
+
+function brParse(raw) {
+  var fluxo = brTextoFluxo(raw);
+  var linhas = fluxo.split('\n').map(function(l){ return l.trim(); });
+  var urls = brTodasURLs(raw);
+
+  var d = {
+    artista: '', musica: '', genero: '',
+    periodoIni: '', periodoFim: '', dias: 0,
+    semanas: [], totalMicros: '',
+    conteudo: [], referencias: [], grupos: [],
+    mencaoIG: '', mencaoTT: '',
+    audioIG: '', musicaTT: '',
+    minIG: '', minTT: ''
+  };
+
+  // --- campos rotulados ("*Artista:* Fulano") ---
+  var mapa = {};
+  linhas.forEach(function(l){
+    var m = brSemDecor(l).match(/^([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ ]{2,30}?)\s*:\s*(.*)$/);
+    if (m && m[2].trim() !== '') {
+      var k = brChave(m[1]);
+      if (!mapa[k]) mapa[k] = m[2].trim();
+    }
+  });
+  d.artista = mapa['artista'] || '';
+  d.musica  = mapa['musica'] || '';
+  d.genero  = mapa['genero'] || '';
+
+  // --- periodo: faixa de datas, ou so a duracao ("20 dias") ---
+  var textoPeriodo = mapa['periodo da campanha'] || mapa['periodo'] || '';
+  var faixa = textoPeriodo.match(/(\d{1,2}\/\d{1,2})\D+(\d{1,2}\/\d{1,2})/);
+  if (faixa) { d.periodoIni = faixa[1]; d.periodoFim = faixa[2]; }
+  var dur = textoPeriodo.match(/(\d+)\s*dias?/i);
+  if (dur) d.dias = parseInt(dur[1], 10);
+
+  // --- distribuicao semanal ---
+  var reSemana = /(\d+)\s*ª?\s*semanas?\s*[-–—:]\s*(\d+)\s*micros?/gi;
+  var ms;
+  while ((ms = reSemana.exec(fluxo)) !== null) {
+    d.semanas.push({ n: ms[1], micros: ms[2] });
+  }
+
+  // --- total de micros (informacao interna) ---
+  linhas.forEach(function(l){
+    if (d.totalMicros) return;
+    if (/semana/i.test(l)) return;
+    var mm = brSemDecor(l).match(/^(\d+)\s*micros?$/i);
+    if (mm) d.totalMicros = mm[1];
+  });
+
+  // --- mencoes ---
+  var arrobas = (fluxo.match(/@[A-Za-z0-9._]{2,}/g) || []);
+  if (arrobas.length) { d.mencaoIG = arrobas[0]; d.mencaoTT = arrobas[0]; }
+
+  // --- links de audio / musica / referencias ---
+  urls.forEach(function(u){
+    if (!d.audioIG && brEhAudioIG(u)) d.audioIG = u;
+    else if (!d.musicaTT && brEhMusicaTT(u)) d.musicaTT = u;
+  });
+  urls.forEach(function(u){
+    if (u === d.audioIG || u === d.musicaTT) return;
+    if (brEhVideoRef(u)) d.referencias.push(u);
+  });
+
+  // --- minutagem ---
+  var minBloco = fluxo.match(/minutagem[\s\S]{0,200}/i);
+  if (minBloco) {
+    var mIG = minBloco[0].match(/instagram\s*:?\s*(?:a partir de?\s*)?(\d{1,2}:\d{2})/i);
+    var mTT = minBloco[0].match(/tiktok\s*:?\s*(?:a partir de?\s*)?(\d{1,2}:\d{2})/i);
+    if (mIG) d.minIG = mIG[1];
+    if (mTT) d.minTT = mTT[1];
+  }
+
+  // --- sugestao de conteudo: o que vem depois de "Briefing" ---
+  var iBrief = -1;
+  linhas.forEach(function(l, i){
+    if (iBrief === -1 && /^briefing$/i.test(brSemDecor(l))) iBrief = i;
+  });
+  if (iBrief !== -1) {
+    for (var i = iBrief + 1; i < linhas.length; i++) {
+      var t = brSemDecor(linhas[i]);
+      if (/^(refer[êe]ncias?|sugest[õo]es? de legendas?|legendas)/i.test(t)) break;
+      if (brEhURL(t)) break;
+      if (t !== '' && !/^_+$/.test(t)) d.conteudo.push(t);
+    }
+  }
+
+  // --- legendas agrupadas por titulo ---
+  var grupoAtual = null;
+  linhas.forEach(function(l){
+    var t = brSemDecor(l);
+    if (/^legendas\b/i.test(t) && !/^legendas\s*:?\s*$/i.test(t)) {
+      grupoAtual = { titulo: t.replace(/:\s*$/, ''), itens: [] };
+      d.grupos.push(grupoAtual);
+      return;
+    }
+    var item = t.match(/^\d+\s*[\.\)]\s*(.+)$/) || t.match(/^[*•-]\s+(.+)$/);
+    if (item && grupoAtual) {
+      var texto = item[1].trim();
+      if (texto) grupoAtual.itens.push(texto);
+    }
+  });
+  d.grupos = d.grupos.filter(function(g){ return g.itens.length > 0; });
+
+  return d;
+}
+
+/* ---- campos editaveis ---- */
+var brDados = null;
+
+function brVal(id) {
+  var el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function brSomaDias(inicio, dias) {
+  var m = inicio.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!m || !dias) return '';
+  var hoje = new Date();
+  var dt = new Date(hoje.getFullYear(), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+  if (isNaN(dt.getTime())) return '';
+  dt.setDate(dt.getDate() + dias);
+  return ('0' + dt.getDate()).slice(-2) + '/' + ('0' + (dt.getMonth() + 1)).slice(-2);
+}
+
+var BR_CAMPOS = [
+  { id: 'c-artista',  rotulo: 'Artista',            chave: 'artista' },
+  { id: 'c-musica',   rotulo: 'Música',             chave: 'musica' },
+  { id: 'c-genero',   rotulo: 'Gênero',             chave: 'genero' },
+  { id: 'c-ini',      rotulo: 'Início (dd/mm)',     chave: 'periodoIni' },
+  { id: 'c-fim',      rotulo: 'Fim (dd/mm)',        chave: 'periodoFim' },
+  { id: 'c-mencaoIG', rotulo: 'Menção Instagram',   chave: 'mencaoIG' },
+  { id: 'c-mencaoTT', rotulo: 'Menção TikTok',      chave: 'mencaoTT' },
+  { id: 'c-minIG',    rotulo: 'Minutagem Instagram', chave: 'minIG' },
+  { id: 'c-minTT',    rotulo: 'Minutagem TikTok',   chave: 'minTT' }
+];
+
+function brMontarCampos() {
+  var box = document.getElementById('brCampos');
+  box.innerHTML = BR_CAMPOS.map(function(c){
+    var v = brDados[c.chave] || '';
+    return '<div class="campo"><label for="' + c.id + '">' + c.rotulo + '</label>' +
+           '<input id="' + c.id + '" value="' + v.replace(/"/g, '&quot;') + '"></div>';
+  }).join('');
+  box.hidden = false;
+  BR_CAMPOS.forEach(function(c){
+    document.getElementById(c.id).addEventListener('input', function(){
+      // com a duracao conhecida, a data final sai sozinha a partir do inicio
+      if (c.id === 'c-ini' && !brVal('c-fim')) {
+        var dias = brDados.semanas.length ? brDados.semanas.length * 7 : brDados.dias;
+        var fim = brSomaDias(brVal('c-ini'), dias);
+        if (fim) document.getElementById('c-fim').value = fim;
+      }
+      brRender();
+    });
+  });
+}
+
+function brMontarTexto() {
+  var d = brDados;
+  var L = [];
+
+  L.push('*Briefing*');
+  L.push('A publicação nas duas redes sociais é obrigatória.');
+  L.push('1 Reels');
+  L.push('1 vídeo TikTok');
+  L.push('1 repost nos stories');
+  L.push('');
+
+  var ini = brVal('c-ini'), fim = brVal('c-fim');
+  L.push('🗓 *Período da Campanha:* ' + (ini && fim ? ini + ' a ' + fim : (ini || fim || '—')));
+  L.push('');
+
+  if (d.semanas.length) {
+    d.semanas.forEach(function(s){ L.push(s.n + 'ª Semana - ' + s.micros + ' micros'); });
+    L.push('');
+  }
+
+  L.push('🎤 *Artista:* ' + (brVal('c-artista') || '—'));
+  L.push('🎵 *Música:* ' + (brVal('c-musica') || '—'));
+  L.push('🎶 *Gênero:* ' + (brVal('c-genero') || '—'));
+  L.push('');
+
+  L.push('💡 *Sugestões de Conteúdo:*');
+  L.push(d.conteudo.length ? d.conteudo.join('\n') : '—');
+  L.push('');
+
+  if (d.referencias.length) {
+    L.push('Vídeos de referência:');
+    d.referencias.forEach(function(u){ L.push(u); });
+    L.push('');
+  }
+
+  if (d.grupos.length) {
+    L.push('*Sugestões de legendas*');
+    L.push('');
+    d.grupos.forEach(function(g){
+      L.push('*' + g.titulo + ':*');
+      L.push('');
+      g.itens.forEach(function(it){ L.push('* ' + it); });
+      L.push('');
+    });
+  }
+
+  L.push('👉🏼 *Menção (obrigatório):*');
+  L.push('*Instagram:* ' + (brVal('c-mencaoIG') || '—'));
+  L.push('*TikTok:* ' + (brVal('c-mencaoTT') || '—'));
+  L.push('');
+
+  L.push('🔗 *Links da Música*');
+  L.push('');
+  L.push('*Música no Instagram (obrigatório):* ' + (d.audioIG || '—'));
+  L.push('*Música no TikTok (obrigatório):* ' + (d.musicaTT || '—'));
+  L.push('');
+
+  L.push('*Minutagem da música:*');
+  L.push('Instagram: a partir de ' + (brVal('c-minIG') || '—'));
+  L.push('Tiktok: a partir de ' + (brVal('c-minTT') || '—'));
+
+  return L.join('\n');
+}
+
+function brPendencias() {
+  var d = brDados, faltando = [];
+  function chk(cond, msg) { if (!cond) faltando.push(msg); }
+
+  chk(brVal('c-artista'), 'Artista');
+  chk(brVal('c-musica'), 'Música');
+  chk(brVal('c-genero'), 'Gênero');
+  chk(brVal('c-ini') && brVal('c-fim'),
+      'Período da campanha (data de início e fim)' +
+      (d.dias ? ' — o briefing só informa a duração: ' + d.dias + ' dias' : '') +
+      (!d.dias && d.semanas.length ? ' — o briefing só informa ' + d.semanas.length + ' semanas' : ''));
+  chk(d.semanas.length, 'Distribuição semanal de micros');
+  chk(d.conteudo.length, 'Sugestões de conteúdo');
+  chk(d.referencias.length, 'Vídeos de referência');
+  chk(d.grupos.length, 'Sugestões de legendas');
+  chk(brVal('c-mencaoIG'), 'Menção do Instagram');
+  chk(brVal('c-mencaoTT'), 'Menção do TikTok');
+  chk(d.audioIG, 'Link da música no Instagram');
+  chk(d.musicaTT, 'Link da música no TikTok');
+  chk(brVal('c-minIG'), 'Minutagem no Instagram');
+  chk(brVal('c-minTT'), 'Minutagem no TikTok');
+
+  // conferencia: a soma das semanas bate com o total de micros informado?
+  if (d.totalMicros && d.semanas.length) {
+    var soma = d.semanas.reduce(function(a, s){ return a + parseInt(s.micros, 10); }, 0);
+    if (soma !== parseInt(d.totalMicros, 10)) {
+      faltando.push('Conferir: as semanas somam ' + soma + ' micros, mas o briefing fala em ' + d.totalMicros);
+    }
+  }
+  return faltando;
+}
+
+function brRender() {
+  var d = brDados;
+  var texto = brMontarTexto();
+  var faltando = brPendencias();
+  var statusEl = document.getElementById('brStatus');
+
+  BR_CAMPOS.forEach(function(c){
+    var el = document.getElementById(c.id);
+    if (el) el.className = el.value.trim() ? '' : 'pendente';
+  });
+
+  statusEl.textContent = faltando.length
+    ? faltando.length + ' item(ns) pendente(s) — preencha nos campos acima'
+    : 'Briefing completo, nada pendente.';
+  statusEl.className = faltando.length ? 'status err' : 'status ok';
+
+  var html = '<div class="card">';
+  if (faltando.length) {
+    html += '<div class="faltando" style="margin-top:0"><strong>Faltou no briefing original (' + faltando.length + '):</strong><ul>';
+    faltando.forEach(function(f){ html += '<li>' + f.replace(/</g, '&lt;') + '</li>'; });
+    html += '</ul></div>';
+  }
+  if (d.totalMicros || d.orcamento) {
+    html += '<div class="faltando" style="background:#f4f3fb;border-color:var(--border);color:var(--ink-soft)">' +
+            '<strong>Fora do briefing (informação interna)</strong>' +
+            (d.totalMicros ? 'Total de micros: ' + d.totalMicros : '') + '</div>';
+  }
+  html += '<div class="saida" id="brSaida">' + texto.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>';
+  html += '<div class="row"><button onclick="brCopiar()">Copiar briefing</button>' +
+          '<button class="secondary" onclick="brBaixar()">Baixar .txt</button></div>';
+  html += '</div>';
+  document.getElementById('brResultArea').innerHTML = html;
+}
+
+document.getElementById('brBtn').addEventListener('click', function(){
+  var raw = document.getElementById('brInput').value;
+  var statusEl = document.getElementById('brStatus');
+  if (!raw.trim()) {
+    document.getElementById('brResultArea').innerHTML = '';
+    document.getElementById('brCampos').hidden = true;
+    statusEl.textContent = 'Cole o briefing primeiro.';
+    statusEl.className = 'status err';
+    return;
+  }
+  brDados = brParse(raw);
+  brMontarCampos();
+  brRender();
+});
+
+document.getElementById('brClearBtn').addEventListener('click', function(){
+  document.getElementById('brInput').value = '';
+  document.getElementById('brResultArea').innerHTML = '';
+  document.getElementById('brCampos').hidden = true;
+  document.getElementById('brCampos').innerHTML = '';
+  document.getElementById('brStatus').textContent = '';
+  brDados = null;
+});
+
+function brCopiar() {
+  navigator.clipboard.writeText(brMontarTexto());
+  var s = document.getElementById('brStatus');
+  var prev = s.textContent, prevC = s.className;
+  s.textContent = 'Briefing copiado.';
+  s.className = 'status ok';
+  setTimeout(function(){ s.textContent = prev; s.className = prevC; }, 2000);
+}
+
+function brBaixar() {
+  var blob = new Blob([brMontarTexto()], { type: 'text/plain;charset=utf-8' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'briefing.txt';
+  a.click();
 }
 </script>
 
