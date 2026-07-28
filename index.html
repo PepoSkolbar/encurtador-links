@@ -230,6 +230,21 @@
   }
   .campo input:focus { outline: none; border-color: var(--accent); background: #fff; }
   .campo input.pendente { border-color: #e8b84b; background: #fffaf0; }
+  .campo.largo { grid-column: 1 / -1; }
+  .campo textarea {
+    width: 100%;
+    min-height: 76px;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 11px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: #fbfaff;
+    color: var(--ink);
+    resize: vertical;
+  }
+  .campo textarea:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .campo textarea.pendente { border-color: #e8b84b; background: #fffaf0; }
 
   .saida {
     margin-top: 18px;
@@ -632,7 +647,7 @@ function brParse(raw) {
     periodoIni: '', periodoFim: '', dias: 0,
     semanas: [], totalMicros: '',
     conteudo: [], referencias: [], grupos: [],
-    mencaoIG: '', mencaoTT: '',
+    mencaoIG: '', mencaoTT: '', hashtag: '',
     audioIG: '', musicaTT: '',
     minIG: '', minTT: ''
   };
@@ -676,6 +691,13 @@ function brParse(raw) {
   var arrobas = (fluxo.match(/@[A-Za-z0-9._]{2,}/g) || []);
   if (arrobas.length) { d.mencaoIG = arrobas[0]; d.mencaoTT = arrobas[0]; }
 
+  // --- hashtag (fora de URL, que tambem usa "#") ---
+  linhas.forEach(function(l){
+    if (d.hashtag || brEhURL(l)) return;
+    var h = l.replace(/https?:\/\/\S+/g, '').match(/#[A-Za-z0-9_À-ÿ]{2,}/);
+    if (h) d.hashtag = h[0];
+  });
+
   // --- links de audio / musica / referencias ---
   urls.forEach(function(u){
     if (!d.audioIG && brEhAudioIG(u)) d.audioIG = u;
@@ -708,6 +730,10 @@ function brParse(raw) {
       if (t !== '' && !/^_+$/.test(t)) d.conteudo.push(t);
     }
   }
+  // o envio final sai com ponto no fim de cada sugestao
+  d.conteudoTexto = d.conteudo.map(function(l){
+    return /[.!?…]$/.test(l) ? l : l + '.';
+  }).join('\n');
 
   // --- legendas agrupadas por titulo ---
   var grupoAtual = null;
@@ -755,14 +781,23 @@ var BR_CAMPOS = [
   { id: 'c-fim',      rotulo: 'Fim (dd/mm)',        chave: 'periodoFim' },
   { id: 'c-mencaoIG', rotulo: 'Menção Instagram',   chave: 'mencaoIG' },
   { id: 'c-mencaoTT', rotulo: 'Menção TikTok',      chave: 'mencaoTT' },
+  { id: 'c-hashtag',  rotulo: 'Hashtag',            chave: 'hashtag' },
   { id: 'c-minIG',    rotulo: 'Minutagem Instagram', chave: 'minIG' },
-  { id: 'c-minTT',    rotulo: 'Minutagem TikTok',   chave: 'minTT' }
+  { id: 'c-minTT',    rotulo: 'Minutagem TikTok',   chave: 'minTT' },
+  // bloco reescrito a mao na pratica: o briefing original costuma vir com
+  // outro verbo e com linhas que nao entram no envio
+  { id: 'c-conteudo', rotulo: 'Sugestões de conteúdo (uma por linha)',
+    chave: 'conteudoTexto', tipo: 'textarea' }
 ];
 
 function brMontarCampos() {
   var box = document.getElementById('brCampos');
   box.innerHTML = BR_CAMPOS.map(function(c){
     var v = brDados[c.chave] || '';
+    if (c.tipo === 'textarea') {
+      return '<div class="campo largo"><label for="' + c.id + '">' + c.rotulo + '</label>' +
+             '<textarea id="' + c.id + '">' + v.replace(/</g, '&lt;') + '</textarea></div>';
+    }
     return '<div class="campo"><label for="' + c.id + '">' + c.rotulo + '</label>' +
            '<input id="' + c.id + '" value="' + v.replace(/"/g, '&quot;') + '"></div>';
   }).join('');
@@ -778,6 +813,12 @@ function brMontarCampos() {
       brRender();
     });
   });
+}
+
+function brLinhasConteudo() {
+  return brVal('c-conteudo').split('\n')
+    .map(function(l){ return l.trim(); })
+    .filter(function(l){ return l !== ''; });
 }
 
 function brMontarTexto() {
@@ -805,8 +846,9 @@ function brMontarTexto() {
   L.push('🎶 *Gênero:* ' + (brVal('c-genero') || '—'));
   L.push('');
 
+  var sugestoes = brLinhasConteudo();
   L.push('💡 *Sugestões de Conteúdo:*');
-  L.push(d.conteudo.length ? d.conteudo.join('\n') : '—');
+  L.push(sugestoes.length ? sugestoes.join('\n') : '—');
   L.push('');
 
   if (d.referencias.length) {
@@ -831,7 +873,13 @@ function brMontarTexto() {
   L.push('*TikTok:* ' + (brVal('c-mencaoTT') || '—'));
   L.push('');
 
-  L.push('🔗 *Links da Música*');
+  // o rascunho traz a hashtag entre a mencao e os links, tambem obrigatoria
+  if (brVal('c-hashtag')) {
+    L.push('👉🏼 *Hashtag (obrigatório):* ' + brVal('c-hashtag'));
+    L.push('');
+  }
+
+  L.push('🔗*Links da Música*');
   L.push('');
   L.push('*Música no Instagram (obrigatório):* ' + (d.audioIG || '—'));
   L.push('*Música no TikTok (obrigatório):* ' + (d.musicaTT || '—'));
@@ -851,20 +899,27 @@ function brPendencias() {
   chk(brVal('c-artista'), 'Artista');
   chk(brVal('c-musica'), 'Música');
   chk(brVal('c-genero'), 'Gênero');
+  // o rascunho manda sempre preencher data de inicio e fim
   chk(brVal('c-ini') && brVal('c-fim'),
-      'Período da campanha (data de início e fim)' +
-      (d.dias ? ' — o briefing só informa a duração: ' + d.dias + ' dias' : '') +
-      (!d.dias && d.semanas.length ? ' — o briefing só informa ' + d.semanas.length + ' semanas' : ''));
+      'Período da campanha — sempre colocar data de início e fim' +
+      (d.dias ? ' (o briefing só informa a duração: ' + d.dias + ' dias)' : '') +
+      (!d.dias && d.semanas.length ? ' (o briefing só informa ' + d.semanas.length + ' semanas)' : ''));
   chk(d.semanas.length, 'Distribuição semanal de micros');
-  chk(d.conteudo.length, 'Sugestões de conteúdo');
+  var nSug = brLinhasConteudo().length;
+  chk(nSug, 'Sugestões de conteúdo');
+  // regra do rascunho: pelo menos 3 sugestoes de conteudo
+  if (nSug && nSug < 3) {
+    faltando.push('Sugestões de conteúdo: só ' + nSug + ', o padrão pede pelo menos 3');
+  }
   chk(d.referencias.length, 'Vídeos de referência');
   chk(d.grupos.length, 'Sugestões de legendas');
-  chk(brVal('c-mencaoIG'), 'Menção do Instagram');
-  chk(brVal('c-mencaoTT'), 'Menção do TikTok');
-  chk(d.audioIG, 'Link da música no Instagram');
-  chk(d.musicaTT, 'Link da música no TikTok');
-  chk(brVal('c-minIG'), 'Minutagem no Instagram');
-  chk(brVal('c-minTT'), 'Minutagem no TikTok');
+  chk(brVal('c-mencaoIG'), 'Menção do Instagram — solicitar ao contratante');
+  chk(brVal('c-mencaoTT'), 'Menção do TikTok — solicitar ao contratante');
+  chk(brVal('c-hashtag'), 'Hashtag (obrigatória) — solicitar ao contratante');
+  chk(d.audioIG, 'Link da música no Instagram — solicitar ao contratante');
+  chk(d.musicaTT, 'Link da música no TikTok — solicitar ao contratante');
+  chk(brVal('c-minIG'), 'Minutagem no Instagram — solicitar ao contratante');
+  chk(brVal('c-minTT'), 'Minutagem no TikTok — solicitar ao contratante');
 
   // conferencia: a soma das semanas bate com o total de micros informado?
   if (d.totalMicros && d.semanas.length) {

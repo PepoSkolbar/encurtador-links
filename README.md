@@ -70,6 +70,16 @@ pronto para enviar ao influenciador.
 - **Orçamento e total de micros** ficam de fora do briefing final — são
   informação interna. Aparecem à parte, só para conferência.
 
+## Regras vindas do rascunho oficial
+
+O modelo `.docx` de briefing define as regras abaixo, que a ferramenta aplica:
+
+- **Período**: *"sempre colocar data de início e fim"*.
+- **Sugestões de conteúdo**: *"adicionar pelo menos 3"* — abaixo disso é apontado.
+- **Menção, Hashtag, Links da Música e Minutagem** estão marcados como
+  *"Solicitar contratante"*, então, quando faltam, a pendência já diz isso.
+- A **Hashtag é obrigatória** e fica entre a Menção e os Links da Música.
+
 ## Itens pendentes
 
 Nada é inventado. O que não estiver no texto é listado como pendente e pode ser
