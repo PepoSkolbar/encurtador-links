@@ -629,6 +629,14 @@ function brChave(s) {
   return brSemDecor(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+// Rotulos que marcam o fim do bloco de legendas e o inicio de outra secao.
+var BR_FIM_LEGENDAS = new RegExp(
+  '^(' +
+  'men[çc][ãa]o|hashtag|links? d[ao] m[úu]sica|m[úu]sica no |minutagem|' +
+  'per[íi]odo|artista|g[êe]nero|refer[êe]ncias?|briefing|marcar|or[çc]amento|' +
+  'sugest\\S*\\s+de\\s+conte[úu]do|\\d+\\s*ª?\\s*semana|\\d+\\s*micros' +
+  ')', 'i');
+
 function brEhAudioIG(u) { return /instagram\.com\/reels?\/audio\//i.test(u); }
 function brEhMusicaTT(u) { return /tiktok\.com\/music\//i.test(u); }
 function brEhVideoRef(u) {
@@ -725,7 +733,7 @@ function brParse(raw) {
   if (iBrief !== -1) {
     for (var i = iBrief + 1; i < linhas.length; i++) {
       var t = brSemDecor(linhas[i]);
-      if (/^(refer[êe]ncias?|sugest[õo]es? de legendas?|legendas)/i.test(t)) break;
+      if (/^(refer[êe]ncias?|sugest\S*\s+de\s+legendas?|legendas)\b/i.test(t)) break;
       if (brEhURL(t)) break;
       if (t !== '' && !/^_+$/.test(t)) d.conteudo.push(t);
     }
@@ -736,19 +744,29 @@ function brParse(raw) {
   }).join('\n');
 
   // --- legendas agrupadas por titulo ---
-  var grupoAtual = null;
+  // Dentro da secao de legendas, qualquer linha e uma legenda. Nao da para
+  // exigir numeracao: copiando do Word ou do Docs a numeracao automatica nao
+  // vem junto, porque ela e formatacao e nao texto.
+  var grupoAtual = null, emLegendas = false;
   linhas.forEach(function(l){
     var t = brSemDecor(l);
-    if (/^legendas\b/i.test(t) && !/^legendas\s*:?\s*$/i.test(t)) {
-      grupoAtual = { titulo: t.replace(/:\s*$/, ''), itens: [] };
+    if (t === '') return;
+
+    // \S em vez de \w: "Sugestões" tem "õ", que \w nao cobre em JavaScript
+    if (/^(?:sugest\S*\s+de\s+)?legendas\b/i.test(t)) {
+      var titulo = t.replace(/^sugest\S*\s+de\s+/i, '').replace(/:\s*$/, '').trim();
+      grupoAtual = { titulo: /^legendas$/i.test(titulo) ? '' : titulo, itens: [] };
       d.grupos.push(grupoAtual);
+      emLegendas = true;
       return;
     }
-    var item = t.match(/^\d+\s*[\.\)]\s*(.+)$/) || t.match(/^[*•-]\s+(.+)$/);
-    if (item && grupoAtual) {
-      var texto = item[1].trim();
-      if (texto) grupoAtual.itens.push(texto);
-    }
+    if (!emLegendas || !grupoAtual) return;
+
+    // qualquer outra secao do briefing encerra o bloco de legendas
+    if (brEhURL(t) || BR_FIM_LEGENDAS.test(t)) { emLegendas = false; grupoAtual = null; return; }
+
+    var texto = t.replace(/^\s*(?:\d+\s*[\.\)]|[*•\-–])\s*/, '').trim();
+    if (texto) grupoAtual.itens.push(texto);
   });
   d.grupos = d.grupos.filter(function(g){ return g.itens.length > 0; });
 
@@ -861,8 +879,11 @@ function brMontarTexto() {
     L.push('*Sugestões de legendas*');
     L.push('');
     d.grupos.forEach(function(g){
-      L.push('*' + g.titulo + ':*');
-      L.push('');
+      // grupo sem titulo proprio entra direto sob "Sugestões de legendas"
+      if (g.titulo) {
+        L.push('*' + g.titulo + ':*');
+        L.push('');
+      }
       g.itens.forEach(function(it){ L.push('* ' + it); });
       L.push('');
     });
