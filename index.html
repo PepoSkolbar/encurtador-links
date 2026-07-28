@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Limpa links de Instagram e TikTok removendo parâmetros de rastreio. Roda 100% no navegador.">
+<title>Encurtador de links — Instagram / TikTok</title>
+<style>
+  :root {
+    --bg: #f4f3fb;
+    --card: #ffffff;
+    --border: #e6e4f3;
+    --ink: #211f36;
+    --ink-soft: #6b6885;
+    --accent: #6e5bf2;
+    --accent-dark: #5942e0;
+    --accent-soft: #efecff;
+    --ok: #0d8a4f;
+    --err: #d5382f;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", -apple-system, Arial, sans-serif;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 40px 24px 70px;
+    background:
+      radial-gradient(900px 400px at 15% -10%, #e7e2ff 0%, transparent 60%),
+      radial-gradient(900px 400px at 100% 0%, #ffe7f2 0%, transparent 55%),
+      var(--bg);
+    color: var(--ink);
+  }
+  .hero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+  .hero .badge {
+    width: 40px; height: 40px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), #b46bff);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+  p.sub { color: var(--ink-soft); font-size: 14px; margin: 8px 0 24px 54px; max-width: 560px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 1px 2px rgba(33,31,54,0.04), 0 8px 24px rgba(33,31,54,0.05);
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 160px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12.5px;
+    padding: 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    resize: vertical;
+    background: #fbfaff;
+    color: var(--ink);
+    transition: border-color .15s;
+  }
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  .row { display: flex; gap: 10px; align-items: center; margin: 14px 0 4px; flex-wrap: wrap; }
+
+  button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 9px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  button:hover { background: var(--accent-dark); }
+  button:active { transform: scale(0.97); }
+  button.secondary {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+  }
+  button.secondary:hover { background: #e2ddff; }
+
+  .status { font-size: 13px; color: var(--ink-soft); font-weight: 500; }
+  .status.err { color: var(--err); }
+  .status.ok { color: var(--ok); }
+
+  .result-card {
+    margin-top: 20px;
+    padding: 0;
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  th, td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  th {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  tbody tr:nth-child(even) td { background: #fbfaff; }
+  tbody tr:hover td { background: var(--accent-soft); }
+
+  td.flag {
+    background: #fff2f1 !important;
+    color: var(--err);
+    font-weight: 600;
+    position: relative;
+  }
+  td.flag::after {
+    content: "⚠";
+    margin-left: 6px;
+  }
+
+  .warnings {
+    margin-top: 14px;
+    padding: 12px 16px;
+    background: #fff2f1;
+    border: 1px solid #f5c6c3;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #8a231d;
+  }
+  .warnings strong { display: block; margin-bottom: 6px; }
+  .warnings ul { margin: 0; padding-left: 18px; }
+  .warnings li { margin: 3px 0; }
+
+  .col-actions { padding: 14px 16px; display: flex; gap: 8px; flex-wrap: wrap; background: #fbfaff; border-top: 1px solid var(--border); }
+  .col-actions button { font-size: 12px; padding: 7px 12px; }
+  .table-wrap { max-height: 520px; overflow: auto; }
+
+  footer { margin-top: 26px; font-size: 12px; color: var(--ink-soft); text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🔗</div>
+  <h1>Encurtador de links</h1>
+</div>
+<p class="sub">Cola a lista de Instagram e TikTok (tabela com tabs, ou o texto achatado do chat) e organiza tudo em colunas certinhas. Roda 100% no navegador — nada sai daqui.</p>
+
+<div class="card">
+  <textarea id="input" placeholder="Cole aqui a lista de links (com tabs entre colunas, ou colada solta do chat)"></textarea>
+
+  <div class="row">
+    <button id="processBtn">Processar</button>
+    <button class="secondary" id="clearBtn">Limpar</button>
+    <span class="status" id="status"></span>
+  </div>
+</div>
+
+<div id="resultArea"></div>
+
+<footer>Regra: corta cada URL no primeiro "?". Sem "?" a URL fica intacta. Trata também links em formato markdown [texto](url).</footer>
+
+<script>
+function cleanUrl(url) {
+  url = url.trim();
+  var m = url.match(/^\[.*?\]\((.*?)\)$/);
+  if (m) url = m[1];
+  var i = url.indexOf('?');
+  return i !== -1 ? url.slice(0, i) : url;
+}
+
+function isIG(tok) { return tok.indexOf('instagram.com') !== -1; }
+function isTikTok(tok) { return tok.indexOf('tiktok.com') !== -1; }
+
+// Colunas cujo cabeçalho contém "Perfil" nunca deveriam ter link de post/reel/vídeo.
+// Detecta o engano mais comum: colar o link do post no lugar do perfil.
+function isPostNotProfile(url, isTikTokCol) {
+  if (isTikTokCol) {
+    return url.indexOf('/video/') !== -1;
+  }
+  return url.indexOf('/reel/') !== -1 || url.indexOf('/p/') !== -1;
+}
+
+function parseInput(raw) {
+  var lines = raw.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l.length > 0; });
+  var hasTabs = lines.some(function(l){ return l.indexOf('\t') !== -1; });
+
+  if (hasTabs) {
+    return lines.map(function(l){ return l.split('\t').map(function(c){ return c.trim(); }); });
+  }
+
+  // sem tabs: pode ser uma URL por linha, ou tudo achatado em espaços (colado do chat)
+  var allTokens = [];
+  lines.forEach(function(l){
+    l.split(/\s+/).forEach(function(t){ if (t) allTokens.push(t); });
+  });
+
+  // se nao tem nenhum token de instagram/tiktok reconhecivel, trata cada linha como 1 coluna
+  var hasSocial = allTokens.some(function(t){ return isIG(t) || isTikTok(t); });
+  if (!hasSocial) {
+    return lines.map(function(l){ return [l]; });
+  }
+
+  var rows = [];
+  var i = 0, n = allTokens.length;
+  while (i < n) {
+    var row = [allTokens[i]]; i++;
+    while (i < n && isIG(allTokens[i])) { row.push(allTokens[i]); i++; }
+    while (i < n && isTikTok(allTokens[i])) { row.push(allTokens[i]); i++; }
+    rows.push(row);
+  }
+  return rows;
+}
+
+var lastResult = null;
+
+document.getElementById('processBtn').addEventListener('click', function(){
+  var raw = document.getElementById('input').value;
+  var statusEl = document.getElementById('status');
+  var resultArea = document.getElementById('resultArea');
+  resultArea.innerHTML = '';
+
+  if (!raw.trim()) {
+    statusEl.textContent = 'Cole uma lista primeiro.';
+    statusEl.className = 'status err';
+    return;
+  }
+
+  var rows = parseInput(raw);
+  if (rows.length === 0) {
+    statusEl.textContent = 'Não encontrei nenhuma linha válida.';
+    statusEl.className = 'status err';
+    return;
+  }
+
+  var colCount = rows.reduce(function(max, r){ return Math.max(max, r.length); }, 0);
+  var lenCounts = {};
+  rows.forEach(function(r){ lenCounts[r.length] = (lenCounts[r.length]||0) + 1; });
+  var uneven = Object.keys(lenCounts).length > 1;
+
+  var cleanedRows = rows.map(function(r){ return r.map(cleanUrl); });
+
+  var defaultHeaders = ['Instagram - Perfil', 'Instagram - Post', 'TikTok - Perfil', 'TikTok - Post'];
+  var headers = [];
+  for (var c = 0; c < colCount; c++) {
+    headers.push(defaultHeaders[c] || ('Coluna ' + (c+1)));
+  }
+
+  lastResult = { headers: headers, rows: cleanedRows };
+
+  // procura, em cada coluna com "Perfil" no nome, links que na verdade sao post/reel/video
+  var profileColIdx = [];
+  headers.forEach(function(h, idx){
+    if (h.toLowerCase().indexOf('perfil') !== -1) profileColIdx.push(idx);
+  });
+  var flagged = [];
+  cleanedRows.forEach(function(r, rIdx){
+    profileColIdx.forEach(function(cIdx){
+      var val = r[cIdx];
+      if (!val) return;
+      var isTikTokCol = headers[cIdx].toLowerCase().indexOf('tiktok') !== -1;
+      if (isPostNotProfile(val, isTikTokCol)) {
+        flagged.push({ row: rIdx, col: cIdx });
+      }
+    });
+  });
+  var flagSet = {};
+  flagged.forEach(function(f){ flagSet[f.row + '-' + f.col] = true; });
+
+  var msg = cleanedRows.length + ' linha(s) processada(s), ' + colCount + ' coluna(s)';
+  if (uneven) msg += ' — atenção: nem todas as linhas têm o mesmo número de colunas, confira manualmente';
+  else if (flagged.length > 0) msg += ' — ' + flagged.length + ' link(s) de perfil parecem ser de post/vídeo, veja abaixo';
+  else msg += '.';
+  statusEl.textContent = msg;
+  statusEl.className = (uneven || flagged.length > 0) ? 'status err' : 'status ok';
+
+  var html = '<div class="card result-card">';
+  html += '<div class="table-wrap"><table><thead><tr>';
+  headers.forEach(function(h){ html += '<th>' + h + '</th>'; });
+  html += '</tr></thead><tbody>';
+  cleanedRows.forEach(function(r, rIdx){
+    html += '<tr>';
+    for (var c = 0; c < colCount; c++) {
+      var isFlagged = flagSet[rIdx + '-' + c];
+      html += '<td' + (isFlagged ? ' class="flag" title="Isso parece um link de post/vídeo, não de perfil"' : '') + '>' + (r[c] || '') + '</td>';
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  if (flagged.length > 0) {
+    html += '<div class="warnings"><strong>' + flagged.length + ' link(s) suspeito(s): parecem ser de post/vídeo, não de perfil.</strong><ul>';
+    flagged.forEach(function(f){
+      html += '<li>Linha ' + (f.row + 1) + ', coluna "' + headers[f.col] + '": ' + cleanedRows[f.row][f.col] + '</li>';
+    });
+    html += '</ul></div>';
+  }
+
+  html += '<div class="col-actions">';
+  html += '<button class="secondary" onclick="copyAll()">Copiar tudo (TSV)</button>';
+  headers.forEach(function(h, idx){
+    html += '<button class="secondary" onclick="copyColumn(' + idx + ')">Copiar coluna: ' + h + '</button>';
+  });
+  html += '<button onclick="downloadTSV()">Baixar .tsv</button>';
+  html += '</div>';
+  html += '</div>';
+
+  resultArea.innerHTML = html;
+});
+
+document.getElementById('clearBtn').addEventListener('click', function(){
+  document.getElementById('input').value = '';
+  document.getElementById('resultArea').innerHTML = '';
+  document.getElementById('status').textContent = '';
+});
+
+function copyAll() {
+  if (!lastResult) return;
+  var lines = [lastResult.headers.join('\t')];
+  lastResult.rows.forEach(function(r){ lines.push(r.join('\t')); });
+  navigator.clipboard.writeText(lines.join('\n'));
+  flashStatus('Tabela completa copiada.');
+}
+
+function copyColumn(idx) {
+  if (!lastResult) return;
+  var lines = lastResult.rows.map(function(r){ return r[idx] || ''; });
+  navigator.clipboard.writeText(lines.join('\n'));
+  flashStatus('Coluna "' + lastResult.headers[idx] + '" copiada (' + lines.length + ' linhas).');
+}
+
+function downloadTSV() {
+  if (!lastResult) return;
+  var lines = [lastResult.headers.join('\t')];
+  lastResult.rows.forEach(function(r){ lines.push(r.join('\t')); });
+  var blob = new Blob([lines.join('\n')], { type: 'text/tab-separated-values' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'links_limpos.tsv';
+  a.click();
+}
+
+function flashStatus(msg) {
+  var statusEl = document.getElementById('status');
+  var prev = statusEl.textContent;
+  statusEl.textContent = msg;
+  statusEl.className = 'status ok';
+  setTimeout(function(){ statusEl.textContent = prev; }, 2000);
+}
+</script>
+
+</body>
+</html>
