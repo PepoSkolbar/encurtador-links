@@ -80,6 +80,22 @@ O modelo `.docx` de briefing define as regras abaixo, que a ferramenta aplica:
   *"Solicitar contratante"*, então, quando faltam, a pendência já diz isso.
 - A **Hashtag é obrigatória** e fica entre a Menção e os Links da Música.
 
+## Seções opcionais
+
+Nem toda campanha usa todas as seções. **Distribuição semanal de micros,
+vídeos de referência e sugestões de legendas** só aparecem no resultado quando
+existem no briefing, e a ausência delas não é apontada como pendência — não
+estão no rascunho oficial e há campanha que sai sem nenhuma das três.
+
+## Campos que aceitam texto livre
+
+- **Menção**: pode ser `@perfil` (sai dividido em Instagram e TikTok) ou uma
+  instrução (`Não é para marcar o artista`), que sai numa linha só.
+- **Minutagem**: aceita horário solto (`00:17`, que vira `a partir de 00:17`),
+  intervalo (`00:24 - 00:53`) ou observação junto, preservados como vieram.
+- **Link do formulário**: reconhecido pelo rótulo ou por ser um link do Google
+  Forms. Mantém a query, que faz parte do endereço.
+
 ## Itens pendentes
 
 Nada é inventado. O que não estiver no texto é listado como pendente e pode ser
