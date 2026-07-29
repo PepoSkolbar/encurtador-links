@@ -885,7 +885,8 @@ var BR_CAMPOS = [
   // menção pode ser instrução em vez de @ ("Não é para marcar o artista")
   { id: 'c-mencaoObs', rotulo: 'Menção (instrução)', chave: 'mencaoObs' },
   { id: 'c-hashtag',  rotulo: 'Hashtag',            chave: 'hashtag' },
-  { id: 'c-linkForm', rotulo: 'Link do formulário', chave: 'linkForm' },
+  // nao vem no briefing do cliente: e a equipe que acrescenta no fim
+  { id: 'c-linkForm', rotulo: 'Link do formulário (nosso)', chave: 'linkForm' },
   { id: 'c-minIG',    rotulo: 'Minutagem Instagram', chave: 'minIG' },
   { id: 'c-minTT',    rotulo: 'Minutagem TikTok',   chave: 'minTT' },
   // bloco reescrito a mao na pratica: o briefing original costuma vir com
@@ -937,7 +938,7 @@ function brMontarTexto() {
   L.push('');
 
   var ini = brVal('c-ini'), fim = brVal('c-fim');
-  L.push('🗓 *Período da Campanha:* ' + (ini && fim ? ini + ' a ' + fim : (ini || fim || '—')));
+  L.push('🗓 *Período da Campanha:* ' + (ini && fim ? ini + ' - ' + fim : (ini || fim || '—')));
   L.push('');
 
   if (d.semanas.length) {
@@ -1032,9 +1033,10 @@ function brPendencias() {
       (!d.dias && d.semanas.length ? ' (o briefing só informa ' + d.semanas.length + ' semanas)' : ''));
   var nSug = brLinhasConteudo().length;
   chk(nSug, 'Sugestões de conteúdo');
-  // regra do rascunho: pelo menos 3 sugestoes de conteudo
+  // o rascunho recomenda pelo menos 3, mas campanha sai com menos, entao
+  // isso e recomendacao e nao pendencia
   if (nSug && nSug < 3) {
-    faltando.push('Sugestões de conteúdo: só ' + nSug + ', o padrão pede pelo menos 3');
+    avisos.push('Só ' + nSug + ' sugestão(ões) de conteúdo. O padrão recomenda pelo menos 3.');
   }
   // Semanas, videos de referencia e legendas nao entram aqui: nao estao no
   // rascunho oficial e ha campanha que sai sem nenhum dos tres.
@@ -1047,6 +1049,10 @@ function brPendencias() {
   // a hashtag nem sempre e usada, entao fica so como lembrete
   if (!brVal('c-hashtag')) {
     avisos.push('Sem hashtag. Se a campanha tiver uma, preencha o campo — ela é opcional, mas quando existe é obrigatório marcar.');
+  }
+  // o formulario nao vem do cliente, e a equipe que acrescenta
+  if (!brVal('c-linkForm')) {
+    avisos.push('Sem link do formulário. Ele não vem no briefing do cliente — é nosso, e entra no fim.');
   }
 
   // conferencia: a soma das semanas bate com o total de micros informado?

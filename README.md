@@ -75,7 +75,11 @@ pronto para enviar ao influenciador.
 O modelo `.docx` de briefing define as regras abaixo, que a ferramenta aplica:
 
 - **Período**: *"sempre colocar data de início e fim"*.
-- **Sugestões de conteúdo**: *"adicionar pelo menos 3"* — abaixo disso é apontado.
+- **Sugestões de conteúdo**: *"adicionar pelo menos 3"* — abaixo disso entra
+  como recomendação, não como pendência: na prática há campanha que sai com 1.
+- **Período**: sai sempre como `dd/mm - dd/mm`.
+- **Link do formulário**: não vem no briefing do cliente, é a equipe que
+  acrescenta no fim. Nunca é cobrado como falta, só lembrado.
 - **Menção, Links da Música e Minutagem** são preenchidos com o que veio no
   briefing; quando faltam, entram na lista de pendências.
 - A **Hashtag** fica entre a Menção e os Links da Música. Nem toda campanha
