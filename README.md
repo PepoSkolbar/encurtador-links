@@ -76,9 +76,10 @@ O modelo `.docx` de briefing define as regras abaixo, que a ferramenta aplica:
 
 - **Período**: *"sempre colocar data de início e fim"*.
 - **Sugestões de conteúdo**: *"adicionar pelo menos 3"* — abaixo disso é apontado.
-- **Menção, Hashtag, Links da Música e Minutagem** estão marcados como
-  *"Solicitar contratante"*, então, quando faltam, a pendência já diz isso.
-- A **Hashtag é obrigatória** e fica entre a Menção e os Links da Música.
+- **Menção, Links da Música e Minutagem** são preenchidos com o que veio no
+  briefing; quando faltam, entram na lista de pendências.
+- A **Hashtag** fica entre a Menção e os Links da Música. Nem toda campanha
+  tem uma, então a ausência dela é só um lembrete, não uma pendência.
 
 ## Seções opcionais
 

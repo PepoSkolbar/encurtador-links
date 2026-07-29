@@ -203,6 +203,20 @@
   .faltando ul { margin: 0; padding-left: 18px; }
   .faltando li { margin: 5px 0; }
 
+  /* lembrete: nao e erro, entao nao usa o tom de alerta */
+  .avisos {
+    margin-top: 14px;
+    padding: 14px 18px;
+    background: var(--accent-soft);
+    border: 1px solid #ddd6ff;
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--accent-dark);
+  }
+  .avisos strong { display: block; margin-bottom: 8px; }
+  .avisos ul { margin: 0; padding-left: 18px; }
+  .avisos li { margin: 5px 0; }
+
   .campos {
     margin-top: 18px;
     display: grid;
@@ -1002,8 +1016,10 @@ function brMontarTexto() {
   return L.join('\n');
 }
 
+// Duas listas: o que falta de verdade e precisa ser buscado no briefing, e o
+// que so merece um lembrete — a hashtag, por exemplo, nem sempre existe.
 function brPendencias() {
-  var d = brDados, faltando = [];
+  var d = brDados, faltando = [], avisos = [];
   function chk(cond, msg) { if (!cond) faltando.push(msg); }
 
   chk(brVal('c-artista'), 'Artista');
@@ -1022,13 +1038,16 @@ function brPendencias() {
   }
   // Semanas, videos de referencia e legendas nao entram aqui: nao estao no
   // rascunho oficial e ha campanha que sai sem nenhum dos tres.
-  chk(brVal('c-mencaoIG') && brVal('c-mencaoTT') || brVal('c-mencaoObs'),
-      'Menção — solicitar ao contratante');
-  chk(brVal('c-hashtag'), 'Hashtag (obrigatória) — solicitar ao contratante');
-  chk(d.audioIG, 'Link da música no Instagram — solicitar ao contratante');
-  chk(d.musicaTT, 'Link da música no TikTok — solicitar ao contratante');
-  chk(brVal('c-minIG'), 'Minutagem no Instagram — solicitar ao contratante');
-  chk(brVal('c-minTT'), 'Minutagem no TikTok — solicitar ao contratante');
+  chk(brVal('c-mencaoIG') && brVal('c-mencaoTT') || brVal('c-mencaoObs'), 'Menção');
+  chk(d.audioIG, 'Link da música no Instagram');
+  chk(d.musicaTT, 'Link da música no TikTok');
+  chk(brVal('c-minIG'), 'Minutagem no Instagram');
+  chk(brVal('c-minTT'), 'Minutagem no TikTok');
+
+  // a hashtag nem sempre e usada, entao fica so como lembrete
+  if (!brVal('c-hashtag')) {
+    avisos.push('Sem hashtag. Se a campanha tiver uma, preencha o campo — ela é opcional, mas quando existe é obrigatório marcar.');
+  }
 
   // conferencia: a soma das semanas bate com o total de micros informado?
   if (d.totalMicros && d.semanas.length) {
@@ -1037,29 +1056,37 @@ function brPendencias() {
       faltando.push('Conferir: as semanas somam ' + soma + ' micros, mas o briefing fala em ' + d.totalMicros);
     }
   }
-  return faltando;
+  return { faltando: faltando, avisos: avisos };
 }
 
 function brRender() {
   var d = brDados;
   var texto = brMontarTexto();
-  var faltando = brPendencias();
+  var res = brPendencias();
+  var faltando = res.faltando, avisos = res.avisos;
   var statusEl = document.getElementById('brStatus');
 
   BR_CAMPOS.forEach(function(c){
     var el = document.getElementById(c.id);
-    if (el) el.className = el.value.trim() ? '' : 'pendente';
+    // a hashtag em branco nao e erro, entao nao ganha o destaque de pendente
+    var opcional = (c.id === 'c-hashtag' || c.id === 'c-linkForm' || c.id === 'c-mencaoObs');
+    if (el) el.className = (el.value.trim() || opcional) ? '' : 'pendente';
   });
 
   statusEl.textContent = faltando.length
     ? faltando.length + ' item(ns) pendente(s) — preencha nos campos acima'
-    : 'Briefing completo, nada pendente.';
+    : (avisos.length ? 'Nada pendente, só um lembrete abaixo.' : 'Briefing completo, nada pendente.');
   statusEl.className = faltando.length ? 'status err' : 'status ok';
 
   var html = '<div class="card">';
   if (faltando.length) {
     html += '<div class="faltando" style="margin-top:0"><strong>Faltou no briefing original (' + faltando.length + '):</strong><ul>';
     faltando.forEach(function(f){ html += '<li>' + f.replace(/</g, '&lt;') + '</li>'; });
+    html += '</ul></div>';
+  }
+  if (avisos.length) {
+    html += '<div class="avisos"' + (faltando.length ? '' : ' style="margin-top:0"') + '><strong>Lembrete:</strong><ul>';
+    avisos.forEach(function(a){ html += '<li>' + a.replace(/</g, '&lt;') + '</li>'; });
     html += '</ul></div>';
   }
   if (d.totalMicros || d.orcamento) {
