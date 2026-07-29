@@ -823,9 +823,9 @@ function brParse(raw) {
       if (mTT) d.minTT = mTT[1].replace(/^\*+/, '').trim();
     }
   }
-  // Vindo um valor so, sem separar por rede, ele serve as duas — mas fica
-  // registrado para virar lembrete, porque as redes costumam divergir.
-  if (d.minIG && !d.minTT) { d.minTT = d.minIG; d.minUnica = true; }
+  // Vindo um valor so, sem separar por rede, ele e do Instagram: no TikTok a
+  // minutagem quase sempre e a partir de 00:00. Fica registrado para lembrete.
+  if (d.minIG && !d.minTT) { d.minTT = '00:00'; d.minUnica = true; }
 
   // --- sugestao de conteudo ---
   // Vem de dois jeitos: solta depois de "Briefing" (e-mail cru) ou sob o
@@ -1108,8 +1108,8 @@ function brPendencias() {
   if (!brVal('c-linkForm')) {
     avisos.push('Sem link do formulário. Ele não vem no briefing do cliente — é nosso, e entra no fim.');
   }
-  if (d.minUnica && brVal('c-minIG') === brVal('c-minTT')) {
-    avisos.push('A minutagem veio num valor só, sem separar por rede. Repeti nas duas — confira se o TikTok não tem outro.');
+  if (d.minUnica && brVal('c-minTT') === '00:00') {
+    avisos.push('A minutagem veio num valor só, sem separar por rede. Usei o padrão do TikTok, a partir de 00:00 — confira se é isso mesmo.');
   }
 
   // conferencia: a soma das semanas bate com o total de micros informado?

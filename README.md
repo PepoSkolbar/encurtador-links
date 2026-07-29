@@ -121,6 +121,9 @@ se deve marcar.
   instrução (`Não é para marcar o artista`), que sai numa linha só.
 - **Minutagem**: aceita horário solto (`00:17`, que vira `a partir de 00:17`),
   intervalo (`00:24 - 00:53`) ou observação junto, preservados como vieram.
+  Vindo um valor só, sem separar por rede, ele fica no Instagram e o TikTok
+  recebe `a partir de 00:00`, que é o usual — com um lembrete para conferir.
+  Não havendo minutagem nenhuma, nada é preenchido: os dois ficam pendentes.
 - **Link do formulário**: reconhecido pelo rótulo ou por ser um link do Google
   Forms. Mantém a query, que faz parte do endereço.
 
