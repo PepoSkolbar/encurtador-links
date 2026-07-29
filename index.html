@@ -217,6 +217,20 @@
   .avisos ul { margin: 0; padding-left: 18px; }
   .avisos li { margin: 5px 0; }
 
+  /* informacao interna: fica de fora do que e enviado */
+  .interno {
+    margin-top: 14px;
+    padding: 14px 18px;
+    background: #f4f3fb;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .interno strong { display: block; margin-bottom: 8px; }
+  .interno ul { margin: 0; padding-left: 18px; }
+  .interno li { margin: 5px 0; }
+
   .campos {
     margin-top: 18px;
     display: grid;
@@ -688,7 +702,10 @@ function brParse(raw) {
   d.genero  = mapa['genero'] || '';
 
   // --- periodo: faixa de datas, ou so a duracao ("20 dias") ---
-  var textoPeriodo = mapa['periodo da campanha'] || mapa['periodo'] || '';
+  // O rotulo varia bastante entre quem escreve o briefing: "Período da
+  // Campanha", "Período", "Data", "Datas", "Data da campanha".
+  var textoPeriodo = mapa['periodo da campanha'] || mapa['periodo'] ||
+                     mapa['data da campanha'] || mapa['datas'] || mapa['data'] || '';
   var faixa = textoPeriodo.match(/(\d{1,2}\/\d{1,2})\D+(\d{1,2}\/\d{1,2})/);
   if (faixa) { d.periodoIni = faixa[1]; d.periodoFim = faixa[2]; }
   var dur = textoPeriodo.match(/(\d+)\s*dias?/i);
@@ -701,13 +718,19 @@ function brParse(raw) {
     d.semanas.push({ n: ms[1], micros: ms[2] });
   }
 
-  // --- total de micros (informacao interna) ---
+  // --- total de micros e custo: informacao interna, nao vao para o envio ---
   linhas.forEach(function(l){
     if (d.totalMicros) return;
     if (/semana/i.test(l)) return;
     var mm = brSemDecor(l).match(/^(\d+)\s*micros?$/i);
     if (mm) d.totalMicros = mm[1];
   });
+  // tambem aparece como "Campanha: 100 micros"
+  if (!d.totalMicros) {
+    var mc = (mapa['campanha'] || '').match(/(\d+)\s*micros?/i);
+    if (mc) d.totalMicros = mc[1];
+  }
+  d.orcamento = mapa['custo'] || mapa['orcamento'] || mapa['investimento'] || '';
 
   // --- mencoes ---
   // Pode vir como @perfil, ou como instrucao ("Não é para marcar o artista").
@@ -733,8 +756,21 @@ function brParse(raw) {
     }
   }
   if (!d.mencaoIG && !d.mencaoTT && !d.mencaoObs) {
-    var arrobas = (fluxo.match(/@[A-Za-z0-9._]{2,}/g) || []);
+    // sem as URLs: o "@" de tiktok.com/@fulano/video/... e o autor da
+    // referencia, nunca o perfil a ser marcado
+    var semURLs = fluxo.replace(/https?:\/\/\S+/g, ' ');
+    var arrobas = (semURLs.match(/@[A-Za-z0-9._]{2,}/g) || []);
     if (arrobas.length) { d.mencaoIG = arrobas[0]; d.mencaoTT = arrobas[0]; }
+  }
+
+  // "nem marcar ele!" quer dizer nao marcar ninguem. Diferente de "NÃO MARCAR
+  // NA LEGENDA", que so restringe onde marcar, entao a legenda fica de fora.
+  if (!d.mencaoIG && !d.mencaoTT && !d.mencaoObs) {
+    var proibeMarcar = linhas.some(function(l){
+      return /(n[ãa]o|nem)\s+(é\s+para\s+|e\s+para\s+)?marcar(?!\s+(na\s+legenda|no\s+coment))/i
+             .test(brChave(l).replace(/nao/g, 'não'));
+    });
+    if (proibeMarcar) d.mencaoObs = 'Não é para marcar o artista';
   }
 
   // --- link do formulario ---
@@ -752,6 +788,10 @@ function brParse(raw) {
     var h = l.replace(/https?:\/\/\S+/g, '').match(/#[A-Za-z0-9_À-ÿ]{2,}/);
     if (h) d.hashtag = h[0];
   });
+  // o briefing pode dizer explicitamente para nao usar ("Hashtag: não usar!!")
+  if (!d.hashtag && /^(n[ãa]o|sem|nenhuma)\b/i.test(brChave(mapa['hashtag'] || ''))) {
+    d.hashtagNao = true;
+  }
 
   // --- links de audio / musica / referencias ---
   urls.forEach(function(u){
@@ -783,6 +823,9 @@ function brParse(raw) {
       if (mTT) d.minTT = mTT[1].replace(/^\*+/, '').trim();
     }
   }
+  // Vindo um valor so, sem separar por rede, ele serve as duas — mas fica
+  // registrado para virar lembrete, porque as redes costumam divergir.
+  if (d.minIG && !d.minTT) { d.minTT = d.minIG; d.minUnica = true; }
 
   // --- sugestao de conteudo ---
   // Vem de dois jeitos: solta depois de "Briefing" (e-mail cru) ou sob o
@@ -816,6 +859,15 @@ function brParse(raw) {
       return /^(refer[êe]ncias?|sugest\S*\s+de\s+legendas?|legendas)\b/i.test(t) || brEhURL(t);
     });
   }
+  // Sem bloco proprio, a ideia de conteudo costuma vir num rotulo solto
+  // ("Trend: livre. Sugestões: amores, familia, amigos.")
+  if (!d.conteudo.length) {
+    var ROTULO = { trend: 'Trend: ', tema: 'Tema: ' };
+    ['trend', 'sugestoes', 'sugestao', 'tema', 'conteudo'].forEach(function(k){
+      if (mapa[k]) d.conteudo.push((ROTULO[k] || '') + mapa[k]);
+    });
+  }
+
   // URL citada dentro da sugestao de conteudo nao vira referencia solta,
   // senao o mesmo link sai duas vezes no briefing
   var textoConteudo = d.conteudo.join(' ');
@@ -1048,11 +1100,16 @@ function brPendencias() {
 
   // a hashtag nem sempre e usada, entao fica so como lembrete
   if (!brVal('c-hashtag')) {
-    avisos.push('Sem hashtag. Se a campanha tiver uma, preencha o campo — ela é opcional, mas quando existe é obrigatório marcar.');
+    avisos.push(d.hashtagNao
+      ? 'O briefing diz para não usar hashtag — por isso ela não aparece no resultado.'
+      : 'Sem hashtag. Se a campanha tiver uma, preencha o campo — ela é opcional, mas quando existe é obrigatório marcar.');
   }
   // o formulario nao vem do cliente, e a equipe que acrescenta
   if (!brVal('c-linkForm')) {
     avisos.push('Sem link do formulário. Ele não vem no briefing do cliente — é nosso, e entra no fim.');
+  }
+  if (d.minUnica && brVal('c-minIG') === brVal('c-minTT')) {
+    avisos.push('A minutagem veio num valor só, sem separar por rede. Repeti nas duas — confira se o TikTok não tem outro.');
   }
 
   // conferencia: a soma das semanas bate com o total de micros informado?
@@ -1096,9 +1153,13 @@ function brRender() {
     html += '</ul></div>';
   }
   if (d.totalMicros || d.orcamento) {
-    html += '<div class="faltando" style="background:#f4f3fb;border-color:var(--border);color:var(--ink-soft)">' +
-            '<strong>Fora do briefing (informação interna)</strong>' +
-            (d.totalMicros ? 'Total de micros: ' + d.totalMicros : '') + '</div>';
+    var interno = [];
+    if (d.totalMicros) interno.push('Total de micros: ' + d.totalMicros);
+    if (d.orcamento) interno.push('Custo: ' + d.orcamento);
+    html += '<div class="interno">' +
+            '<strong>Fora do briefing (informação interna, não vai para o influenciador)</strong><ul>' +
+            interno.map(function(i){ return '<li>' + i.replace(/</g, '&lt;') + '</li>'; }).join('') +
+            '</ul></div>';
   }
   html += '<div class="saida" id="brSaida">' + texto.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</div>';
   html += '<div class="row"><button onclick="brCopiar()">Copiar briefing</button>' +

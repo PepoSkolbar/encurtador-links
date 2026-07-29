@@ -92,6 +92,29 @@ vídeos de referência e sugestões de legendas** só aparecem no resultado quan
 existem no briefing, e a ausência delas não é apontada como pendência — não
 estão no rascunho oficial e há campanha que sai sem nenhuma das três.
 
+## Rótulos reconhecidos
+
+O mesmo campo aparece com nomes diferentes conforme quem escreve o briefing:
+
+| Campo | Rótulos aceitos |
+| --- | --- |
+| Período | `Período da Campanha`, `Período`, `Data`, `Datas`, `Data da campanha` |
+| Total de micros | linha solta `120 Micros`, ou `Campanha: 100 micros` |
+| Custo | `Custo`, `Orçamento`, `Investimento` — informação interna |
+| Sugestões de conteúdo | bloco após `Briefing`, rótulo `Sugestões de Conteúdo`, ou `Trend`, `Tema` |
+
+## Como a menção é decidida
+
+1. Um `@` colado num rótulo de menção, ou as sub-linhas `Instagram:` / `TikTok:`.
+2. Um `@` solto no texto — **fora de URLs**, porque o `@` de
+   `tiktok.com/@fulano/video/...` é o autor do vídeo de referência, não o
+   perfil a ser marcado.
+3. Não havendo `@` nenhum, uma instrução de não marcar (`nem marcar ele!`)
+   vira `Não é para marcar o artista`.
+
+`NÃO MARCAR NA LEGENDA` não conta como proibição: restringe onde marcar, não
+se deve marcar.
+
 ## Campos que aceitam texto livre
 
 - **Menção**: pode ser `@perfil` (sai dividido em Instagram e TikTok) ou uma
