@@ -1,6 +1,6 @@
-# Organizador — Instagram / TikTok
+# PepoResolve
 
-Ferramentas de campanha client-side, em duas abas:
+Ferramentas de campanha da MKTRENDZ, client-side, em duas abas:
 
 1. **Encurtador de links** — limpa links de Instagram e TikTok, removendo os
    parâmetros de rastreio (tudo depois do `?` na URL).
@@ -74,10 +74,10 @@ pronto para enviar ao influenciador.
 
 O modelo `.docx` de briefing define as regras abaixo, que a ferramenta aplica:
 
-- **Período**: *"sempre colocar data de início e fim"*.
+- **Período**: *"sempre colocar data de início e fim"*, e sai sempre no formato
+  `dd/mm - dd/mm`.
 - **Sugestões de conteúdo**: *"adicionar pelo menos 3"* — abaixo disso entra
   como recomendação, não como pendência: na prática há campanha que sai com 1.
-- **Período**: sai sempre como `dd/mm - dd/mm`.
 - **Link do formulário**: não vem no briefing do cliente, é a equipe que
   acrescenta no fim. Nunca é cobrado como falta, só lembrado.
 - **Menção, Links da Música e Minutagem** são preenchidos com o que veio no
@@ -135,7 +135,7 @@ faltam **período** (o e-mail costuma trazer só a duração, sem data de iníci
 **minutagem**.
 
 Digitando a data de início, a data final é calculada a partir do número de
-semanas do próprio briefing (3 semanas → `23/07` vira `23/07 a 13/08`).
+semanas do próprio briefing (3 semanas → `23/07` vira `23/07 - 13/08`).
 
 ## Conferência automática
 
@@ -144,11 +144,30 @@ isso é apontado.
 
 ---
 
+## Identidade visual
+
+Segue a marca MKTRENDZ, com as cores amostradas dos arquivos oficiais:
+
+| Cor | Onde vem |
+| --- | --- |
+| `#010400` | fundo das capas de apresentação |
+| `#00D098` | verde do selo e da estrela — o acento da marca |
+| `#1EAB79` → `#0EA7A7` | gradiente do logotipo, usado no nome |
+| `#00522B` | brilho verde que sobe do rodapé |
+
+A tipografia é **Montserrat**, a oficial da marca, embutida no HTML como
+data URI: a página não faz nenhuma requisição externa, então continua
+funcionando offline e sem depender de CDN.
+
+O fundo reproduz as capas — preto quase absoluto, grade fina e o brilho verde
+subindo do rodapé — e a estrela de quatro pontas do material da marca aparece
+ao lado do nome.
+
 ## Estrutura
 
 Arquivo único, sem build e sem dependências externas:
 
-- `index.html` — HTML, CSS e JS da ferramenta inteira.
+- `index.html` — HTML, CSS, JS e fontes da ferramenta inteira.
 - `.nojekyll` — evita que o GitHub Pages processe os arquivos com Jekyll.
 
 Para rodar localmente, basta abrir `index.html` no navegador.
