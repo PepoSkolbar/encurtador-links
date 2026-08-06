@@ -56,6 +56,24 @@ posição fixa**, então micro, médio e volume passam pela mesma aba.
   `Instagram - Post 1`, `Instagram - Post 2`, … Uma coluna vazia (o micro
   postou menos que o máximo) herda o tipo da anterior, mantendo a numeração.
 
+### Lista solta, sem tabs
+
+Aqui cada link vai para a coluna **do tipo dele**, e não para a próxima vaga
+livre. É o que impede o desalinhamento quando um micro manda 10 postagens e
+outro manda 6: pela ordem, a 7ª coluna receberia post do Instagram de um e
+link do TikTok do outro. Por tipo, quem postou menos deixa a célula vazia.
+
+As colunas saem sempre nesta ordem, e só aparecem quando existe algo nelas:
+
+```
+Nome | Instagram - Perfil | Instagram - Post 1…N | TikTok - Perfil | TikTok - Post 1…N
+```
+
+Uma linha vira uma pessoa quando ela traz o nome antes dos links, ou quando a
+maioria das linhas já tem dois ou mais links — o caso da lista copiada da
+planilha. Só quando as linhas têm no máximo um link cada é que tudo é lido
+como um fluxo único e reagrupado por perfil.
+
 Colunas que não são link — o carimbo de data/hora, por exemplo — ficam
 intactas: só a coluna de nome recebe as iniciais maiúsculas.
 

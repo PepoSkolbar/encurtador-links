@@ -530,14 +530,20 @@ function parseInput(raw) {
   }).filter(function(reg){ return reg.urls.length > 0; });
 
   var temNome = comNome.some(function(reg){ return reg.nome !== ''; });
-  if (temNome) {
-    return comNome.map(function(reg){ return [reg.nome].concat(reg.urls); });
+  // Uma linha por registro tambem quando quase toda linha ja traz varios links:
+  // e a lista copiada da planilha, uma pessoa por linha.
+  var linhasCheias = comNome.filter(function(reg){ return reg.urls.length >= 2; }).length;
+  var umaLinhaPorPessoa = temNome ||
+    (comNome.length > 1 && linhasCheias >= comNome.length / 2);
+
+  if (umaLinhaPorPessoa) {
+    return distribuirPorTipo(comNome);
   }
 
   // descarta palavras soltas de cabecalho ("Link do perfil do Instagram")
   allTokens = allTokens.filter(isURL);
 
-  var rows = [];
+  var registros = [];
   var i = 0, n = allTokens.length;
   while (i < n) {
     var row = [allTokens[i]]; i++;
@@ -550,9 +556,49 @@ function parseInput(raw) {
       if (!isTikTokVideo(allTokens[i]) && row.some(function(t){ return isTikTok(t) && !isTikTokVideo(t); })) break;
       row.push(allTokens[i]); i++;
     }
-    rows.push(row);
+    registros.push({ nome: '', urls: row });
   }
-  return rows;
+  return distribuirPorTipo(registros);
+}
+
+// Cada link vai para a coluna do TIPO dele, e nao para a proxima vaga livre.
+// Em campanha de volume um micro manda 10 postagens e outro manda 6: pela
+// ordem, a 7a coluna receberia post do Instagram de um e link do TikTok do
+// outro. Por tipo, quem postou menos deixa a celula vazia e nada desalinha.
+function distribuirPorTipo(registros) {
+  var dados = registros.map(function(reg){
+    var d = { nome: reg.nome || '', igPerfil: '', igPosts: [], ttPerfil: '', ttPosts: [], outros: [] };
+    reg.urls.forEach(function(u){
+      switch (tipoDoLink(cleanUrl(u))) {
+        case 'igPerfil': if (!d.igPerfil) { d.igPerfil = u; } else { d.igPosts.push(u); } break;
+        case 'igPost':   d.igPosts.push(u); break;
+        case 'ttPerfil': if (!d.ttPerfil) { d.ttPerfil = u; } else { d.ttPosts.push(u); } break;
+        case 'ttPost':   d.ttPosts.push(u); break;
+        default:         d.outros.push(u);
+      }
+    });
+    return d;
+  });
+
+  function maiorLista(campo) {
+    return dados.reduce(function(m, d){ return Math.max(m, d[campo].length); }, 0);
+  }
+  function algum(campo) {
+    return dados.some(function(d){ return d[campo] !== ''; });
+  }
+  var temNome = algum('nome'), temIG = algum('igPerfil'), temTT = algum('ttPerfil');
+  var maxIG = maiorLista('igPosts'), maxTT = maiorLista('ttPosts'), maxOutros = maiorLista('outros');
+
+  return dados.map(function(d){
+    var r = [];
+    if (temNome) r.push(d.nome);
+    if (temIG) r.push(d.igPerfil);
+    for (var a = 0; a < maxIG; a++) r.push(d.igPosts[a] || '');
+    if (temTT) r.push(d.ttPerfil);
+    for (var b = 0; b < maxTT; b++) r.push(d.ttPosts[b] || '');
+    for (var c = 0; c < maxOutros; c++) r.push(d.outros[c] || '');
+    return r;
+  });
 }
 
 var lastResult = null;
@@ -681,19 +727,28 @@ document.getElementById('clearBtn').addEventListener('click', function(){
   document.getElementById('status').textContent = '';
 });
 
+// Copiar pode ser negado pelo navegador. Sem tratar, a promessa falhava calada
+// e o usuario achava que tinha copiado.
+function copiarTexto(texto, aviso, onErro) {
+  navigator.clipboard.writeText(texto).then(function(){
+    flashStatus(aviso);
+  }, function(){
+    (onErro || flashStatus)('Não consegui copiar — o navegador bloqueou. Use o botão de baixar.');
+  });
+}
+
 function copyAll() {
   if (!lastResult) return;
   var lines = [lastResult.headers.join('\t')];
   lastResult.rows.forEach(function(r){ lines.push(r.join('\t')); });
-  navigator.clipboard.writeText(lines.join('\n'));
-  flashStatus('Tabela completa copiada.');
+  copiarTexto(lines.join('\n'), 'Tabela completa copiada.');
 }
 
 function copyColumn(idx) {
   if (!lastResult) return;
   var lines = lastResult.rows.map(function(r){ return r[idx] || ''; });
-  navigator.clipboard.writeText(lines.join('\n'));
-  flashStatus('Coluna "' + lastResult.headers[idx] + '" copiada (' + lines.length + ' linhas).');
+  copiarTexto(lines.join('\n'),
+    'Coluna "' + lastResult.headers[idx] + '" copiada (' + lines.length + ' linhas).');
 }
 
 function downloadTSV() {
@@ -1318,12 +1373,17 @@ document.getElementById('brClearBtn').addEventListener('click', function(){
 });
 
 function brCopiar() {
-  navigator.clipboard.writeText(brMontarTexto());
   var s = document.getElementById('brStatus');
   var prev = s.textContent, prevC = s.className;
-  s.textContent = 'Briefing copiado.';
-  s.className = 'status ok';
-  setTimeout(function(){ s.textContent = prev; s.className = prevC; }, 2000);
+  function mostrar(msg, ok) {
+    s.textContent = msg;
+    s.className = ok ? 'status ok' : 'status err';
+    setTimeout(function(){ s.textContent = prev; s.className = prevC; }, 2600);
+  }
+  navigator.clipboard.writeText(brMontarTexto()).then(
+    function(){ mostrar('Briefing copiado.', true); },
+    function(){ mostrar('Não consegui copiar — o navegador bloqueou. Use "Baixar .txt".', false); }
+  );
 }
 
 function brBaixar() {
