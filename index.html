@@ -407,7 +407,11 @@ function isURL(tok) { return /^https?:\/\//i.test(tok) || /^\[[^\]]*\]\(\s*https
 
 // Post do Instagram e vídeo do TikTok — o resto do link da plataforma é perfil.
 function isIGPost(tok) { return tok.indexOf('/p/') !== -1 || tok.indexOf('/reel/') !== -1; }
-function isTikTokVideo(tok) { return tok.indexOf('/video/') !== -1; }
+// vt./vm.tiktok.com são os links curtos de compartilhar: sempre apontam para um
+// vídeo, e não trazem "/video/" no endereço.
+function isTikTokVideo(tok) {
+  return tok.indexOf('/video/') !== -1 || /\b(vt|vm)\.tiktok\.com\//i.test(tok);
+}
 
 // Partículas de nomes em português ficam minúsculas quando não são a primeira
 // palavra: "maria da silva" -> "Maria da Silva", não "Maria Da Silva".
@@ -427,27 +431,80 @@ function capitalizarNome(nome) {
   }).join(' ');
 }
 
-// Colunas cujo cabeçalho contém "Perfil" nunca deveriam ter link de post/reel/vídeo.
-// Detecta o engano mais comum: colar o link do post no lugar do perfil.
-function isPostNotProfile(url, isTikTokCol) {
-  if (isTikTokCol) {
-    return url.indexOf('/video/') !== -1;
-  }
-  return url.indexOf('/reel/') !== -1 || url.indexOf('/p/') !== -1;
+// Classifica a coluna pelo conteudo, e nao pela posicao: em campanha de volume
+// a mesma pessoa manda ate 10 posts por rede, entao a 3a coluna pode ser o
+// segundo post do Instagram e nao o perfil do TikTok.
+var ROTULO_TIPO = {
+  igPerfil: 'Instagram - Perfil',
+  igPost:   'Instagram - Post',
+  ttPerfil: 'TikTok - Perfil',
+  ttPost:   'TikTok - Post'
+};
+
+function tipoDoLink(v) {
+  if (isIG(v)) return isIGPost(v) ? 'igPost' : 'igPerfil';
+  if (isTikTok(v)) return isTikTokVideo(v) ? 'ttPost' : 'ttPerfil';
+  return '';
 }
 
+function tipoDaColuna(rows, c) {
+  var contagem = {}, melhor = '', max = 0;
+  rows.forEach(function(r){
+    var v = (r[c] || '').trim();
+    if (!v || !isURL(v)) return;
+    var t = tipoDoLink(cleanUrl(v));
+    if (t) contagem[t] = (contagem[t] || 0) + 1;
+  });
+  for (var k in contagem) if (contagem[k] > max) { max = contagem[k]; melhor = k; }
+  return melhor;
+}
+
+function montarCabecalhos(rows, colCount, colNome) {
+  var tipos = [];
+  for (var c = 0; c < colCount; c++) {
+    if (c === colNome) { tipos.push('nome'); continue; }
+    var t = tipoDaColuna(rows, c);
+    // coluna vazia (o micro postou menos que o maximo) herda o tipo da anterior
+    if (!t && c > 0) t = tipos[c - 1] === 'nome' ? '' : tipos[c - 1];
+    tipos.push(t);
+  }
+  var total = {};
+  tipos.forEach(function(t){ if (t && t !== 'nome') total[t] = (total[t] || 0) + 1; });
+
+  var usados = {};
+  return tipos.map(function(t, c){
+    if (t === 'nome') return 'Nome';
+    if (!t) return 'Coluna ' + (c + 1);
+    usados[t] = (usados[t] || 0) + 1;
+    // so numera quando a mesma rede tem mais de uma coluna do mesmo tipo
+    return ROTULO_TIPO[t] + (total[t] > 1 ? ' ' + usados[t] : '');
+  });
+}
+
+// Cabecalho que veio colado junto com a tabela, quando existir.
+var cabecalhoColado = null;
+
 function parseInput(raw) {
-  var lines = raw.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l.length > 0; });
+  // Sem trim na linha inteira: em tabela, o trim comeria os tabs das pontas e
+  // uma celula vazia no inicio ou no fim deslocaria a linha toda de coluna.
+  var lines = raw.split('\n')
+    .map(function(l){ return l.replace(/\r$/, ''); })
+    .filter(function(l){ return l.trim().length > 0; });
   var hasTabs = lines.some(function(l){ return l.indexOf('\t') !== -1; });
+  cabecalhoColado = null;
 
   if (hasTabs) {
     var tabRows = lines.map(function(l){ return l.split('\t').map(function(c){ return c.trim(); }); });
-    // primeira linha sem nenhuma URL e o cabecalho da planilha, nao e dado
-    if (tabRows.length > 1 && !tabRows[0].some(isURL)) tabRows.shift();
+    // A primeira linha sem nenhuma URL e o cabecalho da planilha. Ele e a
+    // melhor fonte de nome de coluna que existe, entao e guardado em vez de
+    // descartado: a planilha de volume ja traz "Link da postagem no
+    // Instagram 1", "... 2", e assim por diante.
+    if (tabRows.length > 1 && !tabRows[0].some(isURL)) cabecalhoColado = tabRows.shift();
     return tabRows;
   }
 
   // sem tabs: pode ser uma URL por linha, ou tudo achatado em espaços (colado do chat)
+  lines = lines.map(function(l){ return l.trim(); });
   var allTokens = [];
   lines.forEach(function(l){
     l.split(/\s+/).forEach(function(t){ if (t) allTokens.push(t); });
@@ -524,25 +581,34 @@ document.getElementById('processBtn').addEventListener('click', function(){
   rows.forEach(function(r){ lenCounts[r.length] = (lenCounts[r.length]||0) + 1; });
   var uneven = Object.keys(lenCounts).length > 1;
 
-  // Coluna de nome: existe quando a primeira celula de alguma linha nao e URL.
-  // Quando existe, ela e sempre a primeira coluna.
-  var temColunaNome = rows.some(function(r){
-    return r[0] && r[0] !== '' && !isURL(r[0]);
-  });
+  // Coluna de nome: pelo cabecalho colado, quando ele existir, senao a primeira
+  // celula que nao e URL.
+  var colNome = -1;
+  if (cabecalhoColado) {
+    cabecalhoColado.forEach(function(h, i){
+      if (colNome === -1 && /nome/i.test(h)) colNome = i;
+    });
+  } else if (rows.some(function(r){ return r[0] && !isURL(r[0]); })) {
+    colNome = 0;
+  }
+
+  // Cabecalho da planilha vence; sem ele, os nomes saem da classificacao de
+  // cada coluna, para a campanha de volume nao rotular post como perfil.
+  var derivados = montarCabecalhos(rows, colCount, colNome);
+  var headers = [];
+  for (var c = 0; c < colCount; c++) {
+    var h = cabecalhoColado && cabecalhoColado[c] ? cabecalhoColado[c] : derivados[c];
+    headers.push(h || ('Coluna ' + (c + 1)));
+  }
 
   var cleanedRows = rows.map(function(r){
     return r.map(function(cel, idx){
-      if (temColunaNome && idx === 0) return capitalizarNome(cel || '');
-      return cleanUrl(cel || '');
+      cel = cel || '';
+      if (idx === colNome) return capitalizarNome(cel);
+      // celula que nao e link (carimbo de data/hora, observacao) fica intacta
+      return isURL(cel) ? cleanUrl(cel) : cel;
     });
   });
-
-  var defaultHeaders = ['Instagram - Perfil', 'Instagram - Post', 'TikTok - Perfil', 'TikTok - Post'];
-  if (temColunaNome) defaultHeaders = ['Nome'].concat(defaultHeaders);
-  var headers = [];
-  for (var c = 0; c < colCount; c++) {
-    headers.push(defaultHeaders[c] || ('Coluna ' + (c+1)));
-  }
 
   lastResult = { headers: headers, rows: cleanedRows };
 
@@ -556,8 +622,11 @@ document.getElementById('processBtn').addEventListener('click', function(){
     profileColIdx.forEach(function(cIdx){
       var val = r[cIdx];
       if (!val) return;
-      var isTikTokCol = headers[cIdx].toLowerCase().indexOf('tiktok') !== -1;
-      if (isPostNotProfile(val, isTikTokCol)) {
+      // Coluna de perfil nao deve ter post de rede nenhuma, entao quem decide e
+      // o proprio link. Depender do rotulo falhava com cabecalho abreviado:
+      // "perfil tt" nao contem a palavra "tiktok".
+      var t = tipoDoLink(val);
+      if (t === 'igPost' || t === 'ttPost') {
         flagged.push({ row: rIdx, col: cIdx });
       }
     });

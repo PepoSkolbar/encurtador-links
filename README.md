@@ -38,6 +38,27 @@ O resto de cada palavra é preservado como veio, para não estragar grafias
 próprias como `McCartney` ou `iFood` — ou seja, um nome digitado todo em
 CAIXA ALTA continua em caixa alta.
 
+## Campanhas de volume
+
+Em campanha de volume o mesmo micro manda várias postagens, e a planilha de
+respostas do formulário tem até 24 colunas:
+
+```
+Carimbo | Nome completo | Perfil IG | Post IG 1…10 | Perfil TikTok | Post TikTok 1…10
+```
+
+Não existe aba separada para isso: os nomes de coluna **não são atribuídos por
+posição fixa**, então micro, médio e volume passam pela mesma aba.
+
+- **Colando com o cabeçalho da planilha**, ele é aproveitado como está — é a
+  fonte mais confiável de nome de coluna que existe.
+- **Sem cabeçalho**, cada coluna é classificada pelo conteúdo e numerada:
+  `Instagram - Post 1`, `Instagram - Post 2`, … Uma coluna vazia (o micro
+  postou menos que o máximo) herda o tipo da anterior, mantendo a numeração.
+
+Colunas que não são link — o carimbo de data/hora, por exemplo — ficam
+intactas: só a coluna de nome recebe as iniciais maiúsculas.
+
 ## Regras de limpeza
 
 - Cada URL é cortada no primeiro `?`, preservando tudo antes dele (inclusive a
@@ -47,9 +68,14 @@ CAIXA ALTA continua em caixa alta.
 
 ## Validação
 
-Se um link em qualquer coluna **Perfil** contiver `/reel/` ou `/p/` (Instagram)
-ou `/video/` (TikTok), a célula é destacada em vermelho e um aviso lista as
-linhas suspeitas — sinal de que o link do post foi colado no lugar errado.
+Coluna cujo cabeçalho contém **Perfil** não deveria ter link de postagem. Se
+tiver, a célula é destacada em vermelho e um aviso lista as linhas suspeitas —
+sinal de que o link do post foi colado no lugar errado.
+
+Quem decide é o próprio link, não o rótulo da coluna: um post é `/p/` ou
+`/reel/` no Instagram, e `/video/` **ou um link curto `vt.tiktok.com` /
+`vm.tiktok.com`** no TikTok. Assim a checagem funciona mesmo com cabeçalho
+abreviado como `perfil tt`, que não traz o nome da rede.
 
 ---
 
